@@ -11,7 +11,7 @@ use App\Http\Controllers\ProjectAttachmentController;
 
 Route::middleware(['api', 'auth:sanctum'])->group(function () {
     Route::prefix('maps')->group(function () {
-        Route::get('/by-image-name/{image_name}', [MapController::class, 'getByImageName']);
+        Route::get('/by-image-name/{image_name}', action: [MapController::class, 'getByImageName']);
         Route::delete('/by-image-name/{image_name}', [MapController::class, 'deleteByImageName']);
         Route::get('/', [MapController::class, 'index']);
         Route::post('/', [MapController::class, 'store']);
