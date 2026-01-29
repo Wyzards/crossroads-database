@@ -19,6 +19,54 @@ class ProjectController extends Controller
         return response()->json($project->load('links', 'attachments', 'staff.user'));
     }
 
+    public function showByName(string $name)
+    {
+        $project = Project::where('name', $name)
+            ->first();
+
+
+        if (!$project)
+        {
+            return response()->json(['message' => 'Project not found'], 404);
+        }
+
+        return response()->json($project->load('links', 'attachments', 'staff.user'));
+    }
+
+    public function existsByName(string $name)
+    {
+        $exists = Project::where('name', $name)->exists();
+
+        return response()->json([
+            'exists' => $exists,
+        ]);
+    }
+
+
+    public function showByGuild(string $guild_id)
+    {
+        $project = Project::where('guild_id', $guild_id)
+            ->first();
+
+
+        if (!$project)
+        {
+            return response()->json(['message' => 'Project not found'], 404);
+        }
+
+        return response()->json($project->load('links', 'attachments', 'staff.user'));
+    }
+
+    public function existsByGuild(string $guildId)
+    {
+        $exists = Project::where('guild_id', $guildId)->exists();
+
+        return response()->json([
+            'exists' => $exists,
+        ]);
+    }
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([

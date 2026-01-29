@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\CrossroadsUser;
 use App\ProjectStatus;
+use App\ProjectStaffRank;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Tests\TestCase;
@@ -38,7 +39,7 @@ class ProjectTest extends TestCase
             'status' => ProjectStatus::IN_DEVELOPMENT->value, // controller expects string; model casts to enum
             'description' => 'A project description.',
             'ip' => '127.0.0.1',
-            'role_id' => 'ROLE123456789012345',
+            'role_id' => '123456789012345',
             'type' => 'mmo', // controller expects string; model casts to enum
         ], $overrides);
     }
@@ -57,7 +58,7 @@ class ProjectTest extends TestCase
             ]);
             $project->staff()->create([
                 'user_id' => CrossroadsUser::factory()->create()->id,
-                'role' => 'manager',
+                'rank' => ProjectStaffRank::STAFF->value,
             ]);
         });
 
@@ -90,7 +91,7 @@ class ProjectTest extends TestCase
         ]);
         $project->staff()->create([
             'user_id' => CrossroadsUser::factory()->create()->id,
-            'role' => 'manager',
+            'rank' => ProjectStaffRank::STAFF->value,
         ]);
 
         $response = $this->getJson("/api/projects/{$project->id}");
@@ -114,6 +115,149 @@ class ProjectTest extends TestCase
         $this->getJson("/api/projects/{$nonExistentId}")
             ->assertNotFound();
     }
+
+    public function test_showByName_returns_project_with_relationships()
+    {
+        $project = Project::factory()->create([
+            'name' => 'TestProject',
+            'display_name' => 'Display Test'
+        ]);
+
+        // Add relationships
+        $project->links()->create([
+            'url' => 'https://example.com',
+            'title' => 'Example Link'
+        ]);
+        $project->attachments()->create([
+            'filename' => 'file.txt',
+            'path' => '/files/file.txt',
+        ]);
+        $project->staff()->create([
+            'user_id' => CrossroadsUser::factory()->create()->id,
+            'rank' => ProjectStaffRank::STAFF->value,
+        ]);
+
+        // Test retrieval by "name"
+        $response = $this->getJson("/api/projects/by-name/{$project->name}");
+
+        $response->assertOk()
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('id', $project->id)
+                    ->where('name', $project->name)
+                    ->has('links', 1)
+                    ->has('attachments', 1)
+                    ->has('staff', 1)
+                    ->etc()
+            );
+    }
+
+    public function test_showByName_returns_404_if_project_not_found()
+    {
+        $nonExistentName = 'NoSuchProject';
+
+        $response = $this->getJson("/api/projects/by-name/{$nonExistentName}");
+
+        $response->assertNotFound()
+            ->assertJson([
+                'message' => 'Project not found',
+            ]);
+    }
+
+    public function test_exists_by_name_returns_true_when_project_exists()
+    {
+        $project = Project::factory()->create([
+            'name' => 'test-project',
+        ]);
+
+        $response = $this->getJson("/api/projects/exists/by-name/{$project->name}");
+
+        $response->assertOk()
+            ->assertJson([
+                'exists' => true,
+            ]);
+    }
+
+    public function test_exists_by_name_returns_false_when_project_does_not_exist()
+    {
+        $response = $this->getJson('/api/projects/exists/by-name/non-existent-project');
+
+        $response->assertOk()
+            ->assertJson([
+                'exists' => false,
+            ]);
+    }
+
+    public function test_show_by_guild_returns_project_with_relationships()
+    {
+        $project = Project::factory()->create([
+            'guild_id' => 'GUILD123',
+        ]);
+
+        $project->links()->create([
+            'url' => 'https://example.com',
+            'title' => 'Example Link',
+        ]);
+
+        $project->attachments()->create([
+            'filename' => 'file.txt',
+            'path' => '/files/file.txt',
+        ]);
+
+        $project->staff()->create([
+            'user_id' => CrossroadsUser::factory()->create()->id,
+            'rank' => \App\ProjectStaffRank::STAFF->value,
+        ]);
+
+        $response = $this->getJson("/api/projects/by-guild/{$project->guild_id}");
+
+        $response->assertOk()
+            ->assertJson(
+                fn(AssertableJson $json) =>
+                $json->where('id', $project->id)
+                    ->where('guild_id', 'GUILD123')
+                    ->has('links', 1)
+                    ->has('attachments', 1)
+                    ->has('staff', 1)
+                    ->etc()
+            );
+    }
+
+    public function test_show_by_guild_returns_404_when_project_not_found()
+    {
+        $response = $this->getJson('/api/projects/by-guild/GUILD_DOES_NOT_EXIST');
+
+        $response->assertNotFound()
+            ->assertJson([
+                'message' => 'Project not found',
+            ]);
+    }
+
+
+    public function test_exists_by_guild_returns_true_when_project_exists()
+    {
+        $project = Project::factory()->create([
+            'guild_id' => 'GUILD123',
+        ]);
+
+        $response = $this->getJson("/api/projects/exists/by-guild/{$project->guild_id}");
+
+        $response->assertOk()
+            ->assertJson([
+                'exists' => true,
+            ]);
+    }
+
+    public function test_exists_by_guild_returns_false_when_project_does_not_exist()
+    {
+        $response = $this->getJson('/api/projects/exists/by-guild/GUILD_DOES_NOT_EXIST');
+
+        $response->assertOk()
+            ->assertJson([
+                'exists' => false,
+            ]);
+    }
+
 
     public function test_store_creates_project_with_valid_data()
     {

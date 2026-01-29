@@ -39,6 +39,10 @@ Route::middleware(['api', 'auth:sanctum'])->group(function () {
     Route::prefix('projects')->group(callback: function () {
         Route::get('/', [ProjectController::class, 'index']);
         Route::post('/', [ProjectController::class, 'store']);
+        Route::get('/exists/by-guild/{guild_id}', [ProjectController::class, 'existsByGuild']);
+        Route::get('/exists/by-name/{name}', [ProjectController::class, 'existsByName']);
+        Route::get('/by-name/{name}', [ProjectController::class, 'showByName']);
+        Route::get('/by-guild/{guild_id}', [ProjectController::class, 'showByGuild']);
         Route::get('/{project}', [ProjectController::class, 'show']);
         Route::put('/{project}', [ProjectController::class, 'update']);
         Route::delete('/{project}', [ProjectController::class, 'destroy']);

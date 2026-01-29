@@ -143,5 +143,20 @@ class ProjectStaffTest extends TestCase
             ->assertJsonValidationErrors(['user_id']);
     }
 
+    public function test_cannot_create_project_staff_with_invalid_rank()
+    {
+        $project = Project::factory()->create();
+        $user = CrossroadsUser::factory()->create();
+
+        $payload = [
+            'user_id' => $user->id,
+            'rank' => 999
+        ];
+
+        $response = $this->postJson("/api/projects/{$project->id}/staff", $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['rank']);
+    }
 
 }

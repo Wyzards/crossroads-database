@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\ProjectStaff;
+use App\ProjectStaffRank;
 use App\Models\Project;
 use App\Models\CrossroadsUser;
 
@@ -21,7 +23,10 @@ class ProjectStaffController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:crossroads_users,id',
-            'rank' => 'nullable|integer',
+            'rank' => [
+                'required',
+                Rule::in(array_map(fn($case) => $case->value, ProjectStaffRank::cases()))
+            ]
         ]);
 
         // prevent duplicate entries for same user/project here
