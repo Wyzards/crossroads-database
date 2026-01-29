@@ -26,7 +26,7 @@ class ProjectLinkSeeder extends Seeder
         {
             ProjectLink::create([
                 'project_id' => $project->id,
-                'name' => 'GitHub',
+                'title' => 'GitHub',
                 'url' => 'https://github.com/example/project-' . $project->id
             ]);
         }
