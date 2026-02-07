@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('project_id');
 
             // Staff rank as integer (can map to your enum)
-            $table->tinyInteger('rank')->default(1); // e.g. 0 = LEAD, 1 = STAFF
+            $table->string('rank')->default("staff");
 
             $table->timestamps();
 

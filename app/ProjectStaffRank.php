@@ -2,8 +2,8 @@
 
 namespace App;
 
-enum ProjectStaffRank: int
+enum ProjectStaffRank: string
 {
-    case LEAD = 0;
-    case STAFF = 1;
+    case LEAD = "lead";
+    case STAFF = "staff";
 }
