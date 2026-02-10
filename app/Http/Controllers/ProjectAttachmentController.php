@@ -18,21 +18,22 @@ class ProjectAttachmentController extends Controller
     public function store(Request $request, Project $project)
     {
         $validated = $request->validate([
-            'file' => 'required|string|max:10240',
+            'files.*' => 'required|file|max:10240',
         ]);
 
-        $file = $validated["file"];
+        $project->attachments()->delete();
 
-        $path = $file->store(
-            "projects/{$project->id}/attachments",
-            'local'
-        );
+        $attachments = [];
+        foreach ($request->file('files') as $file)
+        {
+            $path = $file->store(
+                "projects/{$project->id}/attachments",
+                'local'
+            );
+            $attachments[] = $project->attachments()->create(['path' => $path]);
+        }
 
-        $attachment = $project->attachments()->create([
-            'path' => $path,
-        ]);
-
-        return response()->json($attachment, 201);
+        return response()->json($attachments, 201);
     }
 
     public function destroy(Project $project, ProjectAttachment $attachment)
