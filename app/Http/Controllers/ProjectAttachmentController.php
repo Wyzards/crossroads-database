@@ -52,6 +52,12 @@ class ProjectAttachmentController extends Controller
     public function downloadAll(Project $project)
     {
         $attachments = $project->attachments;
+
+        if ($attachments->isEmpty())
+        {
+            return response()->json([]);
+        }
+
         $zipName = "project-{$project->id}-attachments.zip";
         $zipPath = storage_path("app/tmp/{$zipName}");
 

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\ProjectStatus;
 use App\ProjectType;
+use App\Models\ProjectLink;
+use App\Models\ProjectAttachment;
+use App\Models\ProjectStaff;
 
 class Project extends Model
 {
