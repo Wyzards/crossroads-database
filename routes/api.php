@@ -53,7 +53,7 @@ Route::middleware(['api', 'auth:sanctum'])->group(function () {
         Route::delete('/{project}/staff/{user}', [ProjectStaffController::class, 'destroy']);
 
         // Attachments
-        Route::get('/{project}/attachments/download', [ProjectAttachmentController::class, 'download']);
+        Route::get('/{project}/attachments/download', [ProjectAttachmentController::class, 'downloadAll']);
         Route::get('/{project}/attachments', [ProjectAttachmentController::class, 'index']);
         Route::post('/{project}/attachments', [ProjectAttachmentController::class, 'store']);
         Route::delete('/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy']);
