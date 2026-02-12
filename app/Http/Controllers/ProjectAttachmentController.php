@@ -53,33 +53,17 @@ class ProjectAttachmentController extends Controller
     {
         $attachments = $project->attachments;
 
-        $zipName = "project-{$project->id}-attachments.zip";
-        $zipPath = storage_path("app/tmp/{$zipName}");
-
-        // Ensure the tmp directory exists
-        if (!file_exists(dirname($zipPath)))
-        {
-            mkdir(dirname($zipPath), 0755, true);
-        }
-
-        // Create the ZIP (even if there are no attachments)
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true)
-        {
-            return response()->json(['error' => 'Failed to create zip file'], 500);
-        }
+        $buffers = [];
 
         foreach ($attachments as $attachment)
         {
-            $zip->addFile(
-                Storage::disk('local')->path($attachment->path),
-                basename($attachment->path)
-            );
+            $filePath = Storage::disk('local')->path($attachment->path);
+            if (file_exists($filePath))
+            {
+                $buffers[] = base64_encode(file_get_contents($filePath));
+            }
         }
 
-        $zip->close();
-
-        // Return the ZIP file
-        return response()->download($zipPath, $zipName)->deleteFileAfterSend(true);
+        return response()->json($buffers);
     }
 }
