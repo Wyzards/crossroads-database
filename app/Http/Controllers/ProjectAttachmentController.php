@@ -51,12 +51,6 @@ class ProjectAttachmentController extends Controller
     public function downloadAll(Project $project)
     {
         $attachments = $project->attachments;
-
-        if ($attachments->isEmpty())
-        {
-            abort(404);
-        }
-
         $zipName = "project-{$project->id}-attachments.zip";
         $zipPath = storage_path("app/tmp/{$zipName}");
 
@@ -71,7 +65,7 @@ class ProjectAttachmentController extends Controller
         foreach ($attachments as $attachment)
         {
             $zip->addFile(
-                Storage::disk('private')->path($attachment->path),
+                Storage::disk('local')->path($attachment->path),
                 basename($attachment->path)
             );
         }
