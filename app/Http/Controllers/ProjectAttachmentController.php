@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use ZipArchive;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\ProjectAttachment;
 use App\Models\Project;
 use App\Http\Controllers\Controller;
+
 
 class ProjectAttachmentController extends Controller
 {
@@ -18,13 +20,18 @@ class ProjectAttachmentController extends Controller
 
     public function store(Request $request, Project $project)
     {
+        Log::info($request->all());
+
+        // Validate 'files' as array (required for empty overwrite) and max size for each file
         $validated = $request->validate([
-            'files' => ['array'],
-            'files.*' => ['file', 'max:10240']
+            'files' => ['array', 'required'],
+            'files.*' => ['max:10240'], // max size in KB (optional, remove if no limit)
         ]);
 
+        // Get uploaded files (UploadedFile objects)
         $files = $request->file('files', []);
 
+        // Delete previous attachments
         $project->attachments()->delete();
 
         $attachments = [];
