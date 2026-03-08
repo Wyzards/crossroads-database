@@ -49,7 +49,7 @@ Route::middleware(['api', 'auth:sanctum'])->group(function () {
 
         // Project Staff
         Route::get('/{project}/staff', [ProjectStaffController::class, 'index']);
-        Route::post('/{project}/staff', [ProjectStaffController::class, 'store']);
+        Route::put('/{project}/staff/{user}', [ProjectStaffController::class, 'upsert']);
         Route::delete('/{project}/staff/{user}', [ProjectStaffController::class, 'destroy']);
 
         // Attachments

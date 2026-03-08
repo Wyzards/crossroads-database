@@ -50,7 +50,7 @@ class ProjectTest extends TestCase
         Project::factory()->count(2)->create()->each(function ($project) {
             $project->links()->create([
                 'url' => 'https://example.com',
-                'title' => 'Example Link'
+                'label' => 'Example Link'
             ]);
             $project->attachments()->create([
                 'filename' => 'file.txt',
@@ -83,7 +83,7 @@ class ProjectTest extends TestCase
         $project = Project::factory()->create();
         $project->links()->create([
             'url' => 'https://example.com',
-            'title' => 'Example Link',
+            'label' => 'Example Link',
         ]);
         $project->attachments()->create([
             'filename' => 'file.txt',
@@ -126,7 +126,7 @@ class ProjectTest extends TestCase
         // Add relationships
         $project->links()->create([
             'url' => 'https://example.com',
-            'title' => 'Example Link'
+            'label' => 'Example Link'
         ]);
         $project->attachments()->create([
             'filename' => 'file.txt',
@@ -196,7 +196,7 @@ class ProjectTest extends TestCase
 
         $project->links()->create([
             'url' => 'https://example.com',
-            'title' => 'Example Link',
+            'label' => 'Example Link',
         ]);
 
         $project->attachments()->create([

@@ -19,25 +19,26 @@ class ProjectStaffController extends Controller
         return response()->json($staff);
     }
 
-    public function store(Project $project, Request $request)
+    public function upsert(Project $project, int $user, Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|integer|exists:crossroads_users,id',
             'rank' => [
                 'required',
                 Rule::in(array_map(fn($case) => $case->value, ProjectStaffRank::cases()))
             ]
         ]);
 
-        // prevent duplicate entries for same user/project here
-        if ($project->staff()->where('user_id', $validated['user_id'])->exists())
-        {
-            return response()->json(['message' => 'User already assigned to project'], 409);
-        }
+        $staff = $project->staff()->updateOrCreate(
+            ['user_id' => $user],
+            ['rank' => $validated['rank']]
+        );
 
-        $staff = $project->staff()->create($validated);
+        $staff->load('user');
 
-        return response()->json($staff, 201);
+        return response()->json(
+            $staff,
+            $staff->wasRecentlyCreated ? 201 : 200
+        );
     }
 
     public function destroy(Project $project, CrossroadsUser $user)

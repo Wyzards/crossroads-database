@@ -17,7 +17,7 @@ class ProjectLinkController extends Controller
     {
         $validated = $request->validate([
             'url' => 'required|url',
-            'title' => 'required|string|max:255',
+            'label' => 'required|string|max:255',
         ]);
 
         $link = $project->links()->create($validated);

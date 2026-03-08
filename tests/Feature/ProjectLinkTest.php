@@ -23,7 +23,7 @@ class ProjectLinkTest extends TestCase
     protected function validPayload(array $overrides = []): array
     {
         return array_merge([
-            'title' => 'Homepage',
+            'label' => 'Homepage',
             'url' => 'https://example.com',
         ], $overrides);
     }
@@ -40,7 +40,7 @@ class ProjectLinkTest extends TestCase
             ->assertJson(
                 fn(AssertableJson $json) =>
                 $json->where('project_id', $project->id)
-                    ->where('title', $payload['title'])
+                    ->where('label', $payload['label'])
                     ->where('url', $payload['url'])
                     ->has('id')
                     ->etc()
@@ -48,7 +48,7 @@ class ProjectLinkTest extends TestCase
 
         $this->assertDatabaseHas('project_links', [
             'project_id' => $project->id,
-            'title' => $payload['title'],
+            'label' => $payload['label'],
             'url' => $payload['url'],
         ]);
     }
@@ -60,7 +60,7 @@ class ProjectLinkTest extends TestCase
         $response = $this->postJson("/api/projects/{$project->id}/links", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'url']);
+            ->assertJsonValidationErrors(['label', 'url']);
     }
 
     public function test_validation_fails_with_invalid_url(): void
@@ -88,7 +88,7 @@ class ProjectLinkTest extends TestCase
                 fn(AssertableJson $json) =>
                 $json->each(
                     fn($json) =>
-                    $json->hasAll(['id', 'project_id', 'title', 'url', 'created_at', 'updated_at'])
+                    $json->hasAll(['id', 'project_id', 'label', 'url', 'created_at', 'updated_at'])
                         ->where('project_id', $project->id)
                 )
             );
