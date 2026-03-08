@@ -17,7 +17,10 @@ return new class extends Migration {
             $table->foreign('map_instance_id')->references('id')->on('map_instances')->onDelete('cascade');
             $table->foreign('crossroads_user_id')->references('id')->on('crossroads_users')->onDelete('cascade');
 
-            $table->unique(['map_instance_id', 'crossroads_user_id']); // prevent duplicates
+            $table->unique(
+                ['map_instance_id', 'crossroads_user_id'],
+                'misu_map_user_unique'
+            ); // prevent duplicates
         });
 
     }
@@ -27,6 +30,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('instance_user_secondary');
+        Schema::dropIfExists('map_instance_secondary_user');
     }
 };

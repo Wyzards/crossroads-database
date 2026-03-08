@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+
+  api:
+    build: .
+    container_name: crossroads-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env.docker
+
+  db:
+    image: mariadb:11
+    container_name: crossroads-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crossroads
+      MYSQL_USER: crossroads
+      MYSQL_PASSWORD: crossroads
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
