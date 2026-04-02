@@ -38,6 +38,14 @@ class MigrateLegacyData extends Command
             1 => 'staff',
         ];
 
+        $typeMap = [
+            'MMO' => 'mmo',
+            'SMP' => 'smp',
+            'MAP' => 'map',
+            'RPG' => 'rpg',
+            'Other' => 'other',
+        ];
+
         // -------------------------
         // STEP 1: USERS
         // -------------------------
@@ -68,7 +76,7 @@ class MigrateLegacyData extends Command
 
         foreach ($projects as $p)
         {
-            $project = Project::create([
+            DB::table('projects')->insert([
                 'id' => $p->project_id, // preserve ID
                 'channel_id' => $p->channel_id,
                 'guild_id' => $p->guild_id,
@@ -79,7 +87,7 @@ class MigrateLegacyData extends Command
                 'description' => $p->description,
                 'ip' => $p->ip,
                 'role_id' => $p->role_id,
-                'type' => $p->type,
+                'type' => $typeMap[$p->type] ?? 'other',
                 'created_at' => now(),
                 'updated_at' => now(),
                 'deleted_at' => $p->deleted ? now() : null,
