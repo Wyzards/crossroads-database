@@ -9,7 +9,7 @@ use App\Http\Controllers\ProjectStaffController;
 use App\Http\Controllers\ProjectLinkController;
 use App\Http\Controllers\ProjectAttachmentController;
 
-Route::middleware(['api', 'auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('maps')->group(function () {
         Route::get('/by-image-name/{image_name}', action: [MapController::class, 'getByImageName']);
         Route::delete('/by-image-name/{image_name}', [MapController::class, 'deleteByImageName']);

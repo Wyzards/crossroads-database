@@ -21,16 +21,26 @@ class ProjectController extends Controller
 
     public function showByName(string $name)
     {
-        $project = Project::where('name', $name)
-            ->first();
-
-
-        if (!$project)
+        try
         {
-            return response()->json(['message' => 'Project not found'], 404);
-        }
 
-        return response()->json($project->load('links', 'attachments', 'staff.user'));
+            $project = Project::where('name', $name)
+                ->first();
+
+
+            if (!$project)
+            {
+                return response()->json(['message' => 'Project not found'], 404);
+            }
+
+            return response()->json($project->load('links', 'attachments', 'staff.user'));
+        } catch (\Throwable $e)
+        {
+            \Log::error('Error in showByName: ' . $e->getMessage(), [
+                'stack' => $e->getTraceAsString(),
+                'name' => $name,
+            ]);
+        }
     }
 
     public function existsByName(string $name)
