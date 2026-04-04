@@ -26,7 +26,8 @@ class Project extends Model
         'description',
         'ip',
         'role_id',
-        'type'
+        'type',
+        'version'
     ];
 
     protected $casts = [
