@@ -90,7 +90,8 @@ class ProjectController extends Controller
             'ip' => 'nullable|string',
             'role_id' => 'nullable|string',
             'type' => 'nullable|string',
-            'version' => 'nullable|string'
+            'version' => 'nullable|string',
+            'discovery_thread_id' => 'nullable|string',
         ]);
 
         $project = Project::create($validated);
@@ -110,7 +111,8 @@ class ProjectController extends Controller
             'ip' => 'nullable|string',
             'role_id' => 'nullable|string',
             'type' => 'nullable|string',
-            'version' => 'nullable|string'
+            'version' => 'nullable|string',
+            'discovery_thread_id' => 'nullable|string',
         ]);
 
         $project->update($validated);

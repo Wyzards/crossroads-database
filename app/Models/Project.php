@@ -27,7 +27,8 @@ class Project extends Model
         'ip',
         'role_id',
         'type',
-        'version'
+        'version',
+        'discovery_thread_id'
     ];
 
     protected $casts = [
