@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\ProjectStatus;
-use App\ProjectType;
-use App\Models\ProjectLink;
+use App\Accessibility;
+use App\ArchitectApproval;
+use App\CommunityVetted;
 use App\Models\ProjectAttachment;
-use App\Models\ProjectStaff;
+use App\Models\ProjectLink;
+use App\ProjectStage;
+use App\ProjectType;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
@@ -32,7 +34,10 @@ class Project extends Model
     ];
 
     protected $casts = [
-        'status' => ProjectStatus::class,
+        'architect_approval' => ArchitectApproval::class,
+        'community_vetted' => CommunityVetted::class,
+        'project_stage' => ProjectStage::class,
+        'accessibility' => Accessibility::class,
         'type' => ProjectType::class,
     ];
 
