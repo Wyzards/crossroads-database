@@ -30,7 +30,11 @@ class Project extends Model
         'role_id',
         'type',
         'version',
-        'discovery_thread_id'
+        'discovery_thread_id',
+        'architect_approval',
+        'community_vetted',
+        'project_stage',
+        'accessibility',
     ];
 
     protected $casts = [

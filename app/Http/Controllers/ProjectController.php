@@ -106,8 +106,12 @@ class ProjectController extends Controller
             'discovery_thread_id' => 'nullable|string',
         ]);
 
-        $project = Project::create($validated);
-        return response()->json($project->load('links', 'attachments', 'staff'), 201);
+        return response()->json(
+            Project::create($validated)
+                ->refresh()
+                ->load('links', 'attachments', 'staff'),
+            201
+        );
     }
 
     public function update(Request $request, Project $project)
