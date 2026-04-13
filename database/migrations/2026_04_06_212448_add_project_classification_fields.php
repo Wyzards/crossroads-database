@@ -12,9 +12,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('projects', function (Blueprint $table) {
-            $table->string('architect_approval')->default('no')->after('status');
+            $table->string('architect_approval')->default('hidden')->after('status');
             $table->string('community_vetted')->default('unvetted')->after('architect_approval');
-            $table->string('project_stage')->default('indev')->after('community_vetted');
+            $table->string('project_stage')->default('in_development')->after('community_vetted');
             $table->string('accessibility')->default('closed')->after('project_stage');
         });
 
@@ -24,7 +24,7 @@ return new class extends Migration {
             {
 
                 $updates = [
-                    'architect_approval' => 'unapproved',
+                    'architect_approval' => 'hidden',
                     'community_vetted' => 'unvetted',
                     'project_stage' => 'in_development',
                     'accessibility' => 'closed',

@@ -55,4 +55,9 @@ class Project extends Model
     {
         return $this->hasMany(ProjectStaff::class);
     }
+
+    public function listEntries()
+    {
+        return $this->hasMany(ProjectListEntry::class);
+    }
 }

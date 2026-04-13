@@ -1,13 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CrossroadsUserController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MapInstanceController;
-use App\Http\Controllers\CrossroadsUserController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\ProjectStaffController;
-use App\Http\Controllers\ProjectLinkController;
 use App\Http\Controllers\ProjectAttachmentController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectLinkController;
+use App\Http\Controllers\ProjectListEntriesController;
+use App\Http\Controllers\ProjectListsController;
+use App\Http\Controllers\ProjectStaffController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('maps')->group(function () {
@@ -39,6 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('projects')->group(callback: function () {
         Route::get('/', [ProjectController::class, 'index']);
         Route::post('/', [ProjectController::class, 'store']);
+        Route::post('/search', [ProjectController::class, 'search']);
         Route::get('/exists/by-guild/{guild_id}', [ProjectController::class, 'existsByGuild']);
         Route::get('/exists/by-name/{name}', [ProjectController::class, 'existsByName']);
         Route::get('/by-name/{name}', [ProjectController::class, 'showByName']);
@@ -62,5 +65,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{project}/links', [ProjectLinkController::class, 'index']);
         Route::post('/{project}/links', [ProjectLinkController::class, 'store']);
         Route::delete('/{project}/links/{link}', [ProjectLinkController::class, 'destroy']);
+    });
+
+    Route::prefix('project-lists')->group(function () {
+        // Get all project lists (for bot to construct them)
+        Route::get('/', [ProjectListsController::class, 'index']);
+
+        // Get a single project list with hydrated entries
+        Route::get('/{list}', [ProjectListsController::class, 'show']);
+    });
+
+    Route::prefix('project-list-entries')->group(function () {
+        // Get all entries for a project
+        Route::get('/project/{project}', [ProjectListEntriesController::class, 'entriesForProject']);
+
+        // Update a thread_channel_id for a given list + project combination
+        Route::put('/update-thread', [ProjectListEntriesController::class, 'updateThread']);
     });
 });

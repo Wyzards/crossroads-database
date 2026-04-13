@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\FilterEvaluator;
 use App\Models\Project;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
@@ -76,6 +77,17 @@ class ProjectController extends Controller
         ]);
     }
 
+    public function search(Request $request)
+    {
+        $filter = $request->input('filter');
+
+        $projects = Project::all()->filter(function ($project) use ($filter) {
+            return FilterEvaluator::matches($project, $filter);
+        });
+
+        return response()->json($projects->values());
+    }
+
 
     public function store(Request $request)
     {
@@ -95,7 +107,7 @@ class ProjectController extends Controller
         ]);
 
         $project = Project::create($validated);
-        return response()->json($project, 201);
+        return response()->json($project->load('links', 'attachments', 'staff'), 201);
     }
 
     public function update(Request $request, Project $project)
@@ -116,7 +128,7 @@ class ProjectController extends Controller
         ]);
 
         $project->update($validated);
-        return response()->json($project);
+        return response()->json($project->load('links', 'attachments', 'staff'));
     }
 
     public function destroy(Project $project)
