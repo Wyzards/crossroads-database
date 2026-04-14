@@ -4,42 +4,52 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectListEntry;
+use App\Models\ProjectList;
 use Illuminate\Http\Request;
 
 class ProjectListEntriesController extends Controller
 {
-    public function entriesForProject(Project $project)
-    {
-        return ProjectListEntry::with('project', 'projectList')
-            ->where('project_id', $project->id)
-            ->get();
-    }
 
-    public function updateThread(Request $request)
+    public function sync(Request $request)
     {
-        $request->validate([
-            'project_list_id' => 'required|integer|exists:project_lists,id',
-            'project_id' => 'required|integer|exists:projects,id',
-            'thread_channel_id' => 'required|string|nullable',
+        $data = $request->validate([
+            'project_list_id' => 'required|exists:project_lists,id',
+            'entries' => 'array',
+            'entries.*.project_id' => 'required|exists:projects,id',
+            'entries.*.thread_channel_id' => 'required|string',
         ]);
 
-        $entry = ProjectListEntry::firstOrCreate(
-            [
-                'project_list_id' => $request->project_list_id,
-                'project_id' => $request->project_id,
-            ],
-            [
-                'thread_channel_id' => $request->thread_channel_id,
-            ]
-        );
+        $listId = $data['project_list_id'];
+        $incoming = collect($data['entries']);
 
-        // If it exists but thread_channel_id changed, update
-        if ($entry->thread_channel_id !== $request->thread_channel_id)
+        $incomingIds = $incoming->pluck('project_id');
+
+        // 🔴 delete missing
+        ProjectListEntry::where('project_list_id', $listId)
+            ->whereNotIn('project_id', $incomingIds)
+            ->delete();
+
+        // 🟢 upsert current
+        foreach ($incoming as $entry)
         {
-            $entry->thread_channel_id = $request->thread_channel_id;
-            $entry->save();
+            ProjectListEntry::updateOrCreate(
+                [
+                    'project_list_id' => $listId,
+                    'project_id' => $entry['project_id'],
+                ],
+                [
+                    'thread_channel_id' => $entry['thread_channel_id'],
+                ]
+            );
         }
 
-        return $entry->load('project', 'projectList');
+        return response()->json(['success' => true]);
+    }
+
+    public function entriesForList(ProjectList $list)
+    {
+        return response()->json(
+            $list->entries()->get()
+        );
     }
 }

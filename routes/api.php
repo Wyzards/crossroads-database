@@ -68,18 +68,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::prefix('project-lists')->group(function () {
-        // Get all project lists (for bot to construct them)
         Route::get('/', [ProjectListsController::class, 'index']);
-
-        // Get a single project list with hydrated entries
         Route::get('/{list}', [ProjectListsController::class, 'show']);
+
+        Route::post('/', [ProjectListsController::class, 'store']);
+        Route::put('/{list}', [ProjectListsController::class, 'update']);
+        Route::delete('/{list}', [ProjectListsController::class, 'destroy']);
     });
 
     Route::prefix('project-list-entries')->group(function () {
-        // Get all entries for a project
-        Route::get('/project/{project}', [ProjectListEntriesController::class, 'entriesForProject']);
-
-        // Update a thread_channel_id for a given list + project combination
-        Route::put('/update-thread', [ProjectListEntriesController::class, 'updateThread']);
+        Route::get('/list/{list}', [ProjectListEntriesController::class, 'entriesForList']);
+        Route::post('/sync', [ProjectListEntriesController::class, 'sync']);
     });
 });
