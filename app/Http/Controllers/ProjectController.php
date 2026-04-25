@@ -81,9 +81,16 @@ class ProjectController extends Controller
     {
         $filter = $request->input('filter');
 
-        $projects = Project::all()->filter(function ($project) use ($filter) {
-            return FilterEvaluator::matches($project, $filter);
-        });
+        if (!$filter)
+        {
+            return Project::with('links', 'attachments', 'staff.user')->get();
+        }
+
+        $projects = Project::with('links', 'attachments', 'staff.user')
+            ->get()
+            ->filter(function ($project) use ($filter) {
+                return FilterEvaluator::matches($project, $filter);
+            });
 
         return response()->json($projects->values());
     }
@@ -109,7 +116,7 @@ class ProjectController extends Controller
         return response()->json(
             Project::create($validated)
                 ->refresh()
-                ->load('links', 'attachments', 'staff'),
+                ->load('links', 'attachments', 'staff.user'),
             201
         );
     }
@@ -135,7 +142,7 @@ class ProjectController extends Controller
         ]);
 
         $project->update($validated);
-        return response()->json($project->load('links', 'attachments', 'staff'));
+        return response()->json($project->load('links', 'attachments', 'staff.user'));
     }
 
     public function destroy(Project $project)

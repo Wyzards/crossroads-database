@@ -11,17 +11,26 @@ class FilterEvaluator
             foreach ($filter['all'] as $rule)
             {
                 if (!self::matches($project, $rule))
+                {
                     return false;
+                }
             }
-            return true;
         }
 
         if (isset($filter['any']))
         {
+            // 👇 Treat empty "any" as always true
+            if (empty($filter['any']))
+            {
+                return true;
+            }
+
             foreach ($filter['any'] as $rule)
             {
                 if (self::matches($project, $rule))
+                {
                     return true;
+                }
             }
             return false;
         }
@@ -35,10 +44,12 @@ class FilterEvaluator
         $value = $rule['value'];
         $operator = $rule['operator'];
 
+        $actual = $project->{$field}->value;
+
         return match ($operator)
         {
-            '=' => $project->{$field} == $value,
-            '!=' => $project->{$field} != $value,
+            '=' => $actual == $value,
+            '!=' => $actual != $value,
             default => false,
         };
     }

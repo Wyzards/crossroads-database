@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('project_lists', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('channel_id');
+            $table->string('channel_id')->nullable();
             $table->json('filters');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

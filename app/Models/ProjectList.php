@@ -18,11 +18,10 @@ class ProjectList extends Model
         'is_active' => 'boolean',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
+    public function tags()
+    {
+        return $this->hasMany(ProjectListTag::class);
+    }
 
     public function entries()
     {
@@ -34,16 +33,5 @@ class ProjectList extends Model
         return $this->belongsToMany(Project::class, 'project_list_entries')
             ->withPivot('thread_channel_id')
             ->withTimestamps();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers
-    |--------------------------------------------------------------------------
-    */
-
-    public function isActive(): bool
-    {
-        return $this->is_active;
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectLinkController;
 use App\Http\Controllers\ProjectListEntriesController;
+use App\Http\Controllers\ProjectListTagsController;
 use App\Http\Controllers\ProjectListsController;
 use App\Http\Controllers\ProjectStaffController;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +75,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [ProjectListsController::class, 'store']);
         Route::put('/{list}', [ProjectListsController::class, 'update']);
         Route::delete('/{list}', [ProjectListsController::class, 'destroy']);
+
+        Route::get('/{list}/tags', [ProjectListTagsController::class, 'index']);
+        Route::post('/{list}/tags', [ProjectListTagsController::class, 'store']);
+        Route::put('/{list}/tags/{tag}', [ProjectListTagsController::class, 'update']);
+        Route::delete('/{list}/tags/{tag}', [ProjectListTagsController::class, 'destroy']);
+
+        Route::get('/{list}/evaluate-tags/{project}', [ProjectListTagsController::class, 'evaluate']);
+        Route::post('/{list}/evaluate-tags-bulk', [ProjectListTagsController::class, 'evaluateBulk']);
     });
 
     Route::prefix('project-list-entries')->group(function () {

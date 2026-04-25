@@ -10,19 +10,19 @@ class ProjectListsController extends Controller
 {
     public function index()
     {
-        return ProjectList::all(); // minimal, just the metadata
+        return ProjectList::with('entries', 'tags')->get(); // minimal, just the metadata
     }
 
     public function show(ProjectList $list)
     {
-        return response()->json($list);
+        return response()->json($list->load('entries', 'tags'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'name' => 'required|string',
-            'channel_id' => 'required|string',
+            'channel_id' => 'nullable|string',
             'filters' => 'required|array',
             'is_active' => 'boolean',
         ]);
@@ -32,9 +32,12 @@ class ProjectListsController extends Controller
             return response()->json(['error' => 'Invalid filter structure'], 422);
         }
 
-        $list = ProjectList::create($data);
-
-        return response()->json($list, 201);
+        return response()->json(
+            ProjectList::create($data)
+                ->refresh()
+                ->load('entries', 'tags'),
+            201
+        );
     }
 
     public function update(Request $request, ProjectList $list)
@@ -53,7 +56,7 @@ class ProjectListsController extends Controller
 
         $list->update($data);
 
-        return response()->json($list);
+        return response()->json($list->load('entries', 'tags'));
     }
 
     public function destroy(ProjectList $list)
