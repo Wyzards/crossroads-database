@@ -18,6 +18,7 @@ class CrossroadsUser extends Model
     protected $fillable = [
         'minecraft_uuid',
         'discord_id',
+        'era_id'
         // other user fields
     ];
 
@@ -41,5 +42,30 @@ class CrossroadsUser extends Model
     public function getMinecraftUuidAttribute()
     {
         return $this->attributes['minecraft_uuid'] ?? null;
+    }
+
+    public function era()
+    {
+        return $this->belongsTo(Era::class);
+    }
+
+    public function badges()
+    {
+        return $this->hasMany(UserBadge::class, 'user_id');
+    }
+
+    public function badgeXp()
+    {
+        return $this->hasMany(UserBadgeXp::class, 'user_id');
+    }
+
+    public function xpEvents()
+    {
+        return $this->hasMany(UserXpEvent::class, 'user_id');
+    }
+
+    public function subscription()
+    {
+        return $this->hasOne(UserSubscription::class, 'user_id');
     }
 }

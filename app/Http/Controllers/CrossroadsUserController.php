@@ -48,7 +48,7 @@ class CrossroadsUserController extends Controller
     {
         $user = CrossroadsUser::where('minecraft_uuid', $uuid)->first();
         if (!$user)
-        {
+    {
             return response()->json(['message' => 'User not found'], 404);
         }
         return response()->json($user);

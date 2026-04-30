@@ -10,9 +10,42 @@ use App\Http\Controllers\ProjectListEntriesController;
 use App\Http\Controllers\ProjectListTagsController;
 use App\Http\Controllers\ProjectListsController;
 use App\Http\Controllers\ProjectStaffController;
+use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\EraController;
+use App\Http\Controllers\UserBadgeController;
+use App\Http\Controllers\XpController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SystemController;
+use App\Http\Controllers\XpEventDefinitionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('eras')->group(function () {
+        Route::get('/', [EraController::class, 'index']);
+        Route::post('/', [EraController::class, 'store']);
+        Route::post('/{era}/activate', [EraController::class, 'activate']);
+    });
+
+    Route::prefix('xp-event-definitions')->group(function () {
+
+        Route::get('/', [XpEventDefinitionController::class, 'index']);
+        Route::post('/', [XpEventDefinitionController::class, 'store']);
+        Route::patch('/{definition}', [XpEventDefinitionController::class, 'update']);
+        Route::delete('/{definition}', [XpEventDefinitionController::class, 'destroy']);
+    });
+
+    Route::prefix('badges')->group(function () {
+        Route::get('/', [BadgeController::class, 'index']);
+        Route::post('/', [BadgeController::class, 'store']);
+        Route::put('/{badge}', [BadgeController::class, 'update']);
+    });
+
+    Route::prefix('system')->group(function () {
+        Route::get('/channels', [SystemController::class, 'getChannels']);
+        Route::post('/channels', [SystemController::class, 'setChannels']);
+    });
+
     Route::prefix('maps')->group(function () {
         Route::get('/by-image-name/{image_name}', action: [MapController::class, 'getByImageName']);
         Route::delete('/by-image-name/{image_name}', [MapController::class, 'deleteByImageName']);
@@ -37,6 +70,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{user}', [CrossroadsUserController::class, 'destroy']);
         Route::get('/minecraft/{uuid}', [CrossroadsUserController::class, 'findByMinecraftUuid']);
         Route::get('/discord/{id}', [CrossroadsUserController::class, 'findByDiscordId']);
+
+        // Badge assignment
+        Route::post('/{user}/badges/{badge}', [UserBadgeController::class, 'assignBadge']);
+        Route::delete('/{user}/badges/{badge}', [UserBadgeController::class, 'removeBadge']);
+
+        // XP Events
+        Route::post('/{user}/xp-events/{definition}/trigger', [XpController::class, 'triggerEvent']);
+
+        // Profile
+        Route::get('/{user}/profile', [ProfileController::class, 'show']);
+
+        // Subscription
+        Route::post('/{user}/subscription', [SubscriptionController::class, 'updateSubscription']);
+
     });
 
     Route::prefix('projects')->group(callback: function () {

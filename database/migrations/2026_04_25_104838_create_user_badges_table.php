@@ -21,7 +21,6 @@ return new class extends Migration {
                 ->cascadeOnDelete();
 
             $table->timestamp('earned_at')->useCurrent();
-            $table->string('source'); // could enum later
 
             $table->timestamps();
 
