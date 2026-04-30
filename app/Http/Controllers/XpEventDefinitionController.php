@@ -28,7 +28,7 @@ class XpEventDefinitionController extends Controller
 
         $definition = XpEventDefinition::create($validated);
 
-        return response()->json($definition);
+        return response()->json($definition->load('badge'));
     }
 
     public function update(Request $request, XpEventDefinition $definition)
@@ -48,7 +48,7 @@ class XpEventDefinitionController extends Controller
             $this->syncDefinitionAndRecalculate($definition);
         }
 
-        return response()->json($definition);
+        return response()->json($definition->load('badge'));
     }
 
     public function destroy(XpEventDefinition $definition)
@@ -60,7 +60,7 @@ class XpEventDefinitionController extends Controller
 
     public function index()
     {
-        return XpEventDefinition::all();
+        return XpEventDefinition::with('badge')->get();
     }
 
     private function syncDefinitionAndRecalculate(XpEventDefinition $definition)
