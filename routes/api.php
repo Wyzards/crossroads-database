@@ -24,6 +24,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('eras')->group(function () {
         Route::get('/', [EraController::class, 'index']);
         Route::post('/', [EraController::class, 'store']);
+        Route::put('/{era}', [EraController::class, 'update']);
         Route::post('/{era}/activate', [EraController::class, 'activate']);
     });
 
