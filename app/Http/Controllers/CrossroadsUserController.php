@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CrossroadsUser;
+use App\Models\Era;
 use Illuminate\Http\Request;
 
 class CrossroadsUserController extends Controller
@@ -22,7 +23,12 @@ class CrossroadsUserController extends Controller
             ], 422);
         }
 
-        $user = CrossroadsUser::create($validated);
+        $activeEra = Era::where('is_active', true)->first();
+
+        $user = CrossroadsUser::create([
+            ...$validated,
+            'era_id' => $activeEra?->id,
+        ]);
 
         return response()->json($user, 201);
     }
@@ -48,7 +54,7 @@ class CrossroadsUserController extends Controller
     {
         $user = CrossroadsUser::where('minecraft_uuid', $uuid)->first();
         if (!$user)
-    {
+        {
             return response()->json(['message' => 'User not found'], 404);
         }
         return response()->json($user);
