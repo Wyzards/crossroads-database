@@ -15,31 +15,53 @@ class EraController extends Controller
 
     public function store(Request $request)
     {
-        $era = Era::create($request->only([
-            'name',
-            'started_at',
-            'ended_at',
-            'is_active'
-        ]));
+        $validated = $request->validate([
+            'name' => 'required|string|unique:eras,name',
+            'role_id' => 'nullable|integer',
+        ]);
 
-        return response()->json($era, 201);
+        $era = Era::create([
+            'name' => $validated['name'],
+            'role_id' => $validated['role_id'] ?? null,
+            'is_active' => false,
+        ]);
+
+        return response()->json($era->load('role'));
+    }
+
+    public function update(Request $request, Era $era)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|unique:eras,name,' . $era->id,
+            'role_id' => 'sometimes|nullable|integer',
+        ]);
+
+        $era->update($validated);
+
+        return response()->json($era->fresh()->load('role'));
     }
 
     public function activate(Era $era)
     {
-        // 1. capture current active era
+        $now = now();
         $previousEra = Era::where('is_active', true)->first();
 
-        // 2. deactivate all
-        Era::query()->update(['is_active' => false]);
+        if ($previousEra)
+        {
+            $previousEra->update([
+                'is_active' => false,
+                'ended_at' => $now,
+            ]);
+        }
 
-        // 3. activate selected
-        $era->update(['is_active' => true]);
+        $era->update([
+            'is_active' => true,
+            'started_at' => $era->started_at ?? $now,
+            'ended_at' => null
+        ]);
 
-        // 4. decide fallback era for unassigned users
         $fallbackEraId = $previousEra?->id ?? $era->id;
 
-        // 5. assign users with no era
         CrossroadsUser::whereNull('era_id')
             ->update(['era_id' => $fallbackEraId]);
 

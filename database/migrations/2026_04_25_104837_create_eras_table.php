@@ -13,9 +13,10 @@ return new class extends Migration {
         Schema::create('eras', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->unsignedBigInteger('role_id')->nullable();
             $table->timestamps();
         });
     }

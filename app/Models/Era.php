@@ -11,6 +11,7 @@ class Era extends Model
         'started_at',
         'ended_at',
         'is_active',
+        'role_id'
     ];
 
     protected $casts = [
