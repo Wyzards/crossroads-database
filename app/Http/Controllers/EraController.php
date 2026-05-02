@@ -13,6 +13,11 @@ class EraController extends Controller
         return response()->json(Era::all());
     }
 
+    public function show(Era $era)
+    {
+        return response()->json($era);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
