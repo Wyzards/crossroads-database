@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('xp-event-definitions')->group(function () {
         Route::get('/', [XpEventDefinitionController::class, 'index']);
         Route::post('/', [XpEventDefinitionController::class, 'store']);
+        Route::post('/{definition}', [XpEventDefinitionController::class, 'show']);
         Route::put('/{definition}', [XpEventDefinitionController::class, 'update']);
         Route::delete('/{definition}', [XpEventDefinitionController::class, 'destroy']);
     });

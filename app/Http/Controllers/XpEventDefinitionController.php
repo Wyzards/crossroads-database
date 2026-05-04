@@ -63,6 +63,11 @@ class XpEventDefinitionController extends Controller
         return XpEventDefinition::with('badge')->get();
     }
 
+    public function show(XpEventDefinition $definition)
+    {
+        return response()->json($definition);
+    }
+
     private function syncDefinitionAndRecalculate(XpEventDefinition $definition)
     {
         /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserXpEvent> $events */
