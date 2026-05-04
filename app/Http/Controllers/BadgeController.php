@@ -12,6 +12,11 @@ class BadgeController extends Controller
         return response()->json(Badge::all());
     }
 
+    public function show(Badge $badge)
+    {
+        return response()->json($badge);
+    }
+
     public function store(Request $request)
     {
         $badge = Badge::create($request->only([
