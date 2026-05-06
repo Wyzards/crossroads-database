@@ -5,10 +5,17 @@ namespace App\Http\Controllers;
 use App\Enums\ProgressionCurveType;
 use App\Models\Badge;
 use App\Models\BadgeProgression;
+use App\Models\UserBadgeXp;
+use App\Services\XpService;
 use Illuminate\Http\Request;
 
 class BadgeProgressionController extends Controller
 {
+
+    public function __construct(
+        private XpService $xpService
+    ) {
+    }
     public function show(Badge $badge)
     {
         if (!$badge->is_xp_based)
@@ -45,13 +52,37 @@ class BadgeProgressionController extends Controller
 
         $progression = BadgeProgression::updateOrCreate(
             ['badge_id' => $badge->id],
-            [
-                'curve_type' => $validated['curve_type'],
-                'base_xp' => $validated['base_xp'],
-                'growth_rate' => $validated['growth_rate'],
-            ]
+            $validated
         );
+
+        $this->recalculateBadgeProgression($badge);
 
         return response()->json($progression);
     }
+
+    private function recalculateBadgeProgression(Badge $badge): void
+    {
+        $progression = $badge->progression;
+
+        if (!$progression)
+        {
+            return;
+        }
+
+        UserBadgeXp::where('badge_id', $badge->id)
+            ->chunk(100, function ($rows) use ($progression) {
+                foreach ($rows as $userBadgeXp)
+                {
+                    $userBadgeXp->level = $this->xpService->calculateLevel(
+                        $userBadgeXp->total_xp,
+                        $progression
+                    );
+
+                    $userBadgeXp->last_calculated_at = now();
+                    $userBadgeXp->save();
+                }
+            });
+    }
+
+
 }

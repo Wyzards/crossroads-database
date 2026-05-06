@@ -70,6 +70,8 @@ class XpEventDefinitionController extends Controller
 
     private function syncDefinitionAndRecalculate(XpEventDefinition $definition)
     {
+        $badgeId = $definition->badge_id;
+
         /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserXpEvent> $events */
         $events = UserXpEvent::where('xp_event_definition_id', $definition->id)
             ->with('definition')
@@ -92,38 +94,36 @@ class XpEventDefinitionController extends Controller
         // recalc affected users ONLY
         foreach ($userIds as $userId)
         {
-            $this->recalculateUserXp($userId);
+            $this->recalculateUserBadgeXp($userId, $badgeId);
         }
     }
 
-    private function recalculateUserXp(int $userId): void
+    private function recalculateUserBadgeXp(int $userId, int $badgeId): void
     {
-        $user = CrossroadsUser::find($userId);
+        $badge = Badge::with('progression')->find($badgeId);
 
-        if (!$user)
-            return;
-
-        $badges = Badge::where('is_xp_based', true)->get();
-
-        foreach ($badges as $badge)
+        if (!$badge || !$badge->progression)
         {
-            $totalXp = UserXpEvent::where('user_id', $userId)
-                ->whereHas('definition', fn($q) => $q->where('badge_id', $badge->id))
-                ->sum('xp_amount');
-
-            $level = $this->xpService->calculateLevel($totalXp, $badge->progression);
-
-            UserBadgeXp::updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'badge_id' => $badge->id,
-                ],
-                [
-                    'total_xp' => $totalXp,
-                    'level' => $level,
-                    'last_calculated_at' => now(),
-                ]
-            );
+            return;
         }
+
+        // 🔥 sum ONLY this badge's XP
+        $totalXp = UserXpEvent::where('user_id', $userId)
+            ->whereHas('definition', fn($q) => $q->where('badge_id', $badgeId))
+            ->sum('xp_amount');
+
+        $level = $this->xpService->calculateLevel($totalXp, $badge->progression);
+
+        UserBadgeXp::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'badge_id' => $badgeId,
+            ],
+            [
+                'total_xp' => $totalXp,
+                'level' => $level,
+                'last_calculated_at' => now(),
+            ]
+        );
     }
 }
