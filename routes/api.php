@@ -11,6 +11,7 @@ use App\Http\Controllers\ProjectListTagsController;
 use App\Http\Controllers\ProjectListsController;
 use App\Http\Controllers\ProjectStaffController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\BadgeProgressionController;
 use App\Http\Controllers\EraController;
 use App\Http\Controllers\UserBadgeController;
 use App\Http\Controllers\XpController;
@@ -42,6 +43,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [BadgeController::class, 'store']);
         Route::get('/{badge}', [BadgeController::class, 'show']);
         Route::put('/{badge}', [BadgeController::class, 'update']);
+
+        Route::get('/{badge}/progression', [BadgeProgressionController::class, 'show']);
+        Route::put('/{badge}/progression', [BadgeProgressionController::class, 'update']);
     });
 
     Route::prefix('system')->group(function () {
