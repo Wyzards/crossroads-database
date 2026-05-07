@@ -75,6 +75,7 @@ class EraController extends Controller
 
         // Step 3: re-fetch updated models
         $affectedUsers = CrossroadsUser::whereIn('id', $affectedUserIds)
+            ->with('era')
             ->get();
 
         return response()->json([

@@ -20,7 +20,7 @@ class CrossroadsUserController extends Controller
         {
             return response()->json([
                 'message' => 'Either minecraft_uuid or discord_id must be provided.'
-            ], 422);
+        ], 422);
         }
 
         $activeEra = Era::where('is_active', true)->first();
@@ -30,17 +30,17 @@ class CrossroadsUserController extends Controller
             'era_id' => $activeEra?->id,
         ]);
 
-        return response()->json($user, 201);
+        return response()->json($user->load('era'), 201);
     }
 
     public function show(CrossroadsUser $user)
     {
-        return response()->json($user);
+        return response()->json($user->load('era'));
     }
 
     public function index()
     {
-        return response()->json(CrossroadsUser::all());
+        return response()->json(CrossroadsUser::with('era')->get());
     }
 
     public function destroy(CrossroadsUser $user)
@@ -57,7 +57,7 @@ class CrossroadsUserController extends Controller
         {
             return response()->json(['message' => 'User not found'], 404);
         }
-        return response()->json($user);
+        return response()->json($user->load('era'));
     }
 
     public function findByDiscordId($discordId)
@@ -67,7 +67,7 @@ class CrossroadsUserController extends Controller
         {
             return response()->json(['message' => 'User not found'], 404);
         }
-        return response()->json($user);
+        return response()->json($user->load('era'));
     }
 
 }
