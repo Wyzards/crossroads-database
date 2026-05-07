@@ -67,9 +67,18 @@ class EraController extends Controller
 
         $fallbackEraId = $previousEra?->id ?? $era->id;
 
-        CrossroadsUser::whereNull('era_id')
+        $affectedUserIds = CrossroadsUser::whereNull('era_id')
+            ->pluck('id');
+
+        CrossroadsUser::whereIn('id', $affectedUserIds)
             ->update(['era_id' => $fallbackEraId]);
 
-        return response()->json($era);
+        // Step 3: re-fetch updated models
+        $affectedUsers = CrossroadsUser::whereIn('id', $affectedUserIds)
+            ->get();
+
+        return response()->json([
+            'affected_users' => $affectedUsers
+        ]);
     }
 }
