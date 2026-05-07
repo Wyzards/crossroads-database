@@ -47,7 +47,7 @@ class BadgeProgressionController extends Controller
         $validated = $request->validate([
             'curve_type' => ['required', 'string', 'in:' . implode(',', array_column(ProgressionCurveType::cases(), 'value'))],
             'base_xp' => ['required', 'integer', 'min:1'],
-            'growth_rate' => ['required', 'numeric', 'min:1'],
+            'growth_factor' => ['required', 'numeric', 'min:1'],
         ]);
 
         $progression = BadgeProgression::updateOrCreate(

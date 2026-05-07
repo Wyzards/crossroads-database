@@ -23,7 +23,7 @@ class XpController extends Controller
             ->latest('created_at')
             ->first();
 
-        if ($lastEvent)
+        if ($lastEvent && $definition->cooldown_seconds !== 0)
         {
             $diff = now()->diffInSeconds($lastEvent->created_at);
 
