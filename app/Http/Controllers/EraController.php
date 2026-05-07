@@ -31,7 +31,7 @@ class EraController extends Controller
             'is_active' => false,
         ]);
 
-        return response()->json($era->load('role'));
+        return response()->json($era);
     }
 
     public function update(Request $request, Era $era)
@@ -43,7 +43,7 @@ class EraController extends Controller
 
         $era->update($validated);
 
-        return response()->json($era->fresh()->load('role'));
+        return response()->json($era->fresh());
     }
 
     public function activate(Era $era)
