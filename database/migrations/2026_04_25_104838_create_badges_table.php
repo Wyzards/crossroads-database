@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('category'); // progression, community, achievement, artifact
+            $table->string('category');
             $table->boolean('is_xp_based')->default(false);
             $table->string('rarity')->nullable();
             $table->boolean('is_active')->default(true);
