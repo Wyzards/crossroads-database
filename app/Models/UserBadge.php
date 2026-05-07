@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserBadge extends Model
 {
+
+    protected $with = ['badge'];
+
     protected $fillable = [
         'user_id',
         'badge_id',

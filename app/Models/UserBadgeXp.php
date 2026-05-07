@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class UserBadgeXp extends Model
 {
     protected $table = 'user_badge_xp';
+    protected $with = ['badge'];
 
     protected $fillable = [
         'user_id',

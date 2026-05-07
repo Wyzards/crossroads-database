@@ -16,17 +16,9 @@ class ProfileController extends Controller
         ]);
 
         $groupedBadges = $user->badges
-            ->map(fn($ub) => $ub->badge)
-            ->groupBy('category');
+            ->groupBy(fn($ub) => $ub->badge->category);
 
-        $progression = $user->badgeXp->map(function ($xp) {
-            return [
-                'badge_id' => $xp->badge_id,
-                'badge_name' => $xp->badge->name,
-                'xp' => $xp->total_xp,
-                'level' => $xp->level,
-            ];
-        });
+        $progression = $user->badgeXp;
 
         return response()->json([
             'user' => $user,
