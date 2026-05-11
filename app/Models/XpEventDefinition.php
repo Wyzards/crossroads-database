@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class XpEventDefinition extends Model
 {
+
+    protected $with = ['badge'];
     protected $fillable = [
         'name',
         'badge_id',
