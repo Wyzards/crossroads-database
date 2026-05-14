@@ -4,34 +4,35 @@ namespace App\Http\Controllers;
 
 use App\Models\CrossroadsUser;
 use App\Models\UserBadgeXp;
+use App\Enums\BadgeCategory;
 
 use Illuminate\Support\Facades\DB;
 
 class LeaderboardController extends Controller
 {
-    public function show(string $type)
+    public function show(CrossroadsUser $viewer, string $type)
     {
         return match ($type)
         {
-            'hunter' => $this->hunter(),
-            'scout' => $this->scout(),
-            'total' => $this->total(),
-            'badge' => $this->badgeCount(),
+            'hunter' => $this->hunter($viewer),
+            'scout' => $this->scout($viewer),
+            'total' => $this->total($viewer),
+            'badge' => $this->badgeCount($viewer),
             default => response()->json(['error' => 'Invalid leaderboard type'], 400),
         };
     }
 
-    private function hunter()
+    private function hunter(CrossroadsUser $viewer)
     {
-        return $this->xpLeaderboard('hunter');
+        return $this->xpLeaderboard('hunter', $viewer);
     }
 
-    private function scout()
+    private function scout(CrossroadsUser $viewer)
     {
-        return $this->xpLeaderboard('scout');
+        return $this->xpLeaderboard('scout', $viewer);
     }
 
-    private function xpLeaderboard(string $badgeKey)
+    private function xpLeaderboard(string $badgeKey, CrossroadsUser $viewer)
     {
         $rows = UserBadgeXp::query()
             ->whereHas('badge', function ($q) use ($badgeKey) {
@@ -66,10 +67,10 @@ class LeaderboardController extends Controller
             })
             ->values();
 
-        return $this->ranked($rows, fn($r) => $r->total_xp);
+        return $this->ranked($rows, fn($r) => $r->total_xp, $viewer);
     }
 
-    private function total()
+    private function total(CrossroadsUser $viewer)
     {
         $rows = UserBadgeXp::query()
             ->with('user')
@@ -78,10 +79,10 @@ class LeaderboardController extends Controller
             ->orderByDesc('xp')
             ->get();
 
-        return $this->ranked($rows, fn($r) => $r->xp);
+        return $this->ranked($rows, fn($r) => $r->xp, $viewer);
     }
 
-    private function badgeCount()
+    private function badgeCount(CrossroadsUser $viewer)
     {
         $rows = CrossroadsUser::query()
             ->with([
@@ -103,11 +104,11 @@ class LeaderboardController extends Controller
 
                     $cat = $ub->badge->category;
 
-                    if ($cat === 'artifact')
+                    if ($cat === BadgeCategory::ARTIFACT)
                         $artifact++;
-                    if ($cat === 'achievement')
+                    if ($cat === BadgeCategory::ACHIEVEMENT)
                         $achievement++;
-                    if ($cat === 'community')
+                    if ($cat === BadgeCategory::COMMUNITY)
                         $community++;
 
                     if (!$latestBadgeTime || $ub->earned_at > $latestBadgeTime)
@@ -118,6 +119,7 @@ class LeaderboardController extends Controller
 
                 $u->badge_total = $artifact + $achievement + $community;
                 $u->last_badge_time = $latestBadgeTime;
+                $u->user_id = $u->id;
 
                 return $u;
             })
@@ -134,15 +136,16 @@ class LeaderboardController extends Controller
             })
             ->values();
 
-        return $this->ranked($rows, fn($r) => $r->badge_total);
+        return $this->ranked($rows, fn($r) => $r->badge_total, $viewer);
     }
 
-    private function ranked($rows, callable $valueFn)
+    private function ranked($rows, callable $valueFn, ?CrossroadsUser $viewer = null)
     {
         $ranked = [];
         $rank = 1;
         $prev = null;
         $skip = 0;
+        $viewerRank = null;
 
         foreach ($rows as $i => $row)
         {
@@ -160,13 +163,24 @@ class LeaderboardController extends Controller
             $ranked[] = [
                 'rank' => $rank,
                 'value' => $value,
-                'user_id' => $row->user_id ?? $row->user->id,
-                'discord_id' => $row->user->discord_id ?? null,
+                'user_id' => $row->user_id,
+                'discord_id' => $row->user?->discord_id ?? $row->discord_id ?? null,
             ];
+
+            if ($viewer && $row->user_id === $viewer->id)
+            {
+                $viewerRank = $rank;
+            }
 
             $prev = $value;
         }
 
-        return response()->json(array_slice($ranked, 0, 10));
+        $total = count($rows);
+
+        return response()->json([
+            'entries' => array_slice($ranked, 0, 10),
+            'viewer_rank' => $viewerRank,
+            'total' => $total,
+        ]);
     }
 }

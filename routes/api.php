@@ -90,7 +90,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{user}/profile', [ProfileController::class, 'show']);
 
         // Leaderboards
-        Route::get('/leaderboard/{type}', [LeaderboardController::class, 'show']);
+        Route::get('/{viewer}/leaderboard/{type}', [LeaderboardController::class, 'show']);
 
         // Subscription
         Route::post('/{user}/subscription', [SubscriptionController::class, 'updateSubscription']);
