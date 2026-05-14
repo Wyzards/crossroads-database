@@ -36,7 +36,7 @@ class LeaderboardController extends Controller
     {
         $rows = UserBadgeXp::query()
             ->whereHas('badge', function ($q) use ($badgeKey) {
-                $q->where('key', $badgeKey);
+                $q->whereRaw('LOWER(name) = ?', [strtolower($badgeKey)]);
             })
             ->with([
                 'badge',
