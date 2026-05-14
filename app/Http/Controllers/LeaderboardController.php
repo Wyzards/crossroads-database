@@ -93,9 +93,7 @@ class LeaderboardController extends Controller
             ->get()
             ->map(function ($u) {
 
-                $artifact = 0;
                 $achievement = 0;
-                $community = 0;
 
                 $latestBadgeTime = null;
 
@@ -104,12 +102,8 @@ class LeaderboardController extends Controller
 
                     $cat = $ub->badge->category;
 
-                    if ($cat === BadgeCategory::ARTIFACT)
-                        $artifact++;
                     if ($cat === BadgeCategory::ACHIEVEMENT)
                         $achievement++;
-                    if ($cat === BadgeCategory::COMMUNITY)
-                        $community++;
 
                     if (!$latestBadgeTime || $ub->earned_at > $latestBadgeTime)
                     {
@@ -117,7 +111,7 @@ class LeaderboardController extends Controller
                     }
                 }
 
-                $u->badge_total = $artifact + $achievement + $community;
+                $u->badge_total = $achievement;
                 $u->last_badge_time = $latestBadgeTime;
                 $u->user_id = $u->id;
 
