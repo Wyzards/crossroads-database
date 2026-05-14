@@ -138,20 +138,27 @@ class LeaderboardController extends Controller
         $ranked = [];
         $rank = 1;
         $prev = null;
-        $skip = 0;
+        $i = 0;
         $viewerRank = null;
+        $viewerIsTied = false;
 
-        foreach ($rows as $i => $row)
+        $valueCounts = [];
+        foreach ($rows as $r)
+        {
+            $v = $valueFn($r);
+            $valueCounts[$v] = ($valueCounts[$v] ?? 0) + 1;
+        }
+
+        foreach ($rows as $row)
         {
             $value = $valueFn($row);
 
-            if ($prev !== null && $value < $prev)
+            if ($prev !== null)
             {
-                $rank += $skip + 1;
-                $skip = 0;
-            } elseif ($prev !== null && $value === $prev)
-            {
-                $skip++;
+                if ($value < $prev)
+                {
+                    $rank = $i + 1;
+                }
             }
 
             $ranked[] = [
@@ -164,9 +171,11 @@ class LeaderboardController extends Controller
             if ($viewer && $row->user_id === $viewer->id)
             {
                 $viewerRank = $rank;
+                $viewerIsTied = ($valueCounts[$value] ?? 0) > 1;
             }
 
             $prev = $value;
+            $i++;
         }
 
         $total = count($rows);
@@ -174,6 +183,7 @@ class LeaderboardController extends Controller
         return response()->json([
             'entries' => array_slice($ranked, 0, 10),
             'viewer_rank' => $viewerRank,
+            'viewer_is_tied' => $viewerIsTied,
             'total' => $total,
         ]);
     }
