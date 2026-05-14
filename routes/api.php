@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\XpEventDefinitionController;
+use App\Http\Controllers\LeaderboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -87,6 +88,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Profile
         Route::get('/{user}/profile', [ProfileController::class, 'show']);
+
+        // Leaderboards
+        Route::get('/leaderboard/{type}', [LeaderboardController::class, 'show']);
 
         // Subscription
         Route::post('/{user}/subscription', [SubscriptionController::class, 'updateSubscription']);
