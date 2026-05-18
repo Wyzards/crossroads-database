@@ -25,11 +25,11 @@ class XpController extends Controller
 
         if ($lastEvent && $definition->cooldown_seconds !== 0)
         {
-            $diff = now()->diffInSeconds($lastEvent->created_at);
+            $diff = now()->timestamp - $lastEvent->created_at->timestamp;
 
             if ($diff < $definition->cooldown_seconds)
             {
-                return response()->json(['message' => 'Cooldown active'], 429);
+                return response()->noContent();
             }
         }
 
