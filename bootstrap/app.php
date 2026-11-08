@@ -19,4 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         Authenticate::class => AuthenticateMiddleware::class
     ])
     ->withExceptions(function (Exceptions $exceptions) {
+        // API callers get JSON errors (e.g. 422 with the validation messages), never a redirect:
+        // the bot's client sends no Accept header, and a 302 to / looked like success.
+        $exceptions->shouldRenderJsonWhen(fn($request) => $request->is('api/*'));
     })->create();

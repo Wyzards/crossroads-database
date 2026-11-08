@@ -136,7 +136,7 @@ class ApplicationController extends Controller
 
         $missing = ApplicationContent::missing($application->working);
         if ($missing)
-            return response()->json(['message' => 'Not finished: ' . implode(', ', $missing), 'missing' => $missing], 422);
+            return response()->json(['message' => 'Not finished: ' . implode(', ', array_column($missing, 'label')), 'missing' => $missing], 422);
 
         $matches = ApplicationContent::matchingProjects($application->working);
         if ($listed = $matches->first(fn($p) => ApplicationContent::isListed($p)))

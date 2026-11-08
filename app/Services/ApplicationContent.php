@@ -83,31 +83,38 @@ class ApplicationContent
         ];
     }
 
-    /** What still blocks submitting, as short human-readable items (empty = complete). */
+    /**
+     * What still blocks submitting, as [{section, label}] (empty = complete). `section` is the card
+     * section that fixes it (basics, status, joining, discord, description, team, submit); this is
+     * the one completeness rule, used by submit and by the bot's card.
+     */
     public static function missing(array $w): array
     {
         $missing = [];
+        $add = function (string $section, string $label) use (&$missing) {
+            $missing[] = ['section' => $section, 'label' => $label];
+        };
         $playable = ($w['accessibility'] ?? null) !== null && $w['accessibility'] !== 'closed';
 
-        if (empty($w['name'])) $missing[] = 'name';
-        if (empty($w['format'])) $missing[] = 'format (server or map)';
-        if (empty($w['project_stage']) || empty($w['accessibility'])) $missing[] = 'status';
+        if (empty($w['name'])) $add('basics', 'name');
+        if (empty($w['format'])) $add('basics', 'format (server or map)');
+        if (empty($w['project_stage']) || empty($w['accessibility'])) $add('status', 'status');
 
         if (($w['format'] ?? null) === 'server' && $playable) {
-            if (empty($w['join_method'])) $missing[] = 'how players join';
-            if (empty($w['ip'])) $missing[] = ($w['join_method'] ?? null) === 'network' ? 'hub address' : 'server address';
-            if (($w['join_method'] ?? null) === 'network' && empty($w['join_instructions'])) $missing[] = 'how to reach the mode from the hub';
+            if (empty($w['join_method'])) $add('joining', 'how players join');
+            if (empty($w['ip'])) $add('joining', ($w['join_method'] ?? null) === 'network' ? 'hub address' : 'server address');
+            if (($w['join_method'] ?? null) === 'network' && empty($w['join_instructions'])) $add('joining', 'how to reach the mode from the hub');
         }
 
-        if (empty($w['discord_kind'])) $missing[] = 'Discord';
+        if (empty($w['discord_kind'])) $add('discord', 'Discord');
         elseif ($w['discord_kind'] !== 'none') {
-            if (empty($w['guild_id'])) $missing[] = 'a working Discord invite';
-            if ($w['discord_kind'] === 'network' && !isset($w['has_dedicated_announcements'])) $missing[] = 'whether the network server has announcements only for this project';
+            if (empty($w['guild_id'])) $add('discord', 'a working Discord invite');
+            if ($w['discord_kind'] === 'network' && !isset($w['has_dedicated_announcements'])) $add('discord', 'whether the network server has announcements only for this project');
         }
 
-        if (empty(trim($w['sections'][0]['text'] ?? ''))) $missing[] = 'description (section 1 text)';
-        if (!collect($w['staff'] ?? [])->contains('rank', 'lead')) $missing[] = 'at least one lead on the team';
-        if (empty($w['english'])) $missing[] = 'confirming English is available';
+        if (empty(trim($w['sections'][0]['text'] ?? ''))) $add('description', 'description (section 1 text)');
+        if (!collect($w['staff'] ?? [])->contains('rank', 'lead')) $add('team', 'at least one lead on the team');
+        if (empty($w['english'])) $add('submit', 'confirming English is available');
 
         return $missing;
     }

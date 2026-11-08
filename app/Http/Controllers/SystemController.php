@@ -7,29 +7,30 @@ use Illuminate\Http\Request;
 
 class SystemController extends Controller
 {
+    public const CHANNELS = [
+        'achievements_channel_id',
+        'intake_channel_id',
+        'intake_review_forum_id',
+        'architects_channel_id',
+        'hunt_suggestions_channel_id',
+    ];
+
     public function getChannels()
     {
-        return response()->json(SystemChannel::first());
+        return response()->json(SystemChannel::first() ?? (object) array_fill_keys(self::CHANNELS, null));
     }
 
+    /** Partial update: only the channels given change. */
     public function setChannels(Request $request)
     {
+        $data = $request->validate(array_fill_keys(self::CHANNELS, 'sometimes|nullable|string|max:30'));
+
         $channels = SystemChannel::first();
-
         if (!$channels)
-        {
-            $channels = SystemChannel::create([
-                'achievements_channel_id' => $request->input('achievements_channel_id'),
-            ]);
-        } else
-        {
-            $channels->update([
-                'achievements_channel_id' => $request->input('achievements_channel_id'),
-            ]);
+            $channels = SystemChannel::create($data);
+        else
+            $channels->update($data);
 
-            // TODO: Allow partials
-        }
-
-        return response()->json($channels);
+        return response()->json($channels->fresh());
     }
 }
