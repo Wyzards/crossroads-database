@@ -110,6 +110,7 @@ class ProjectController extends Controller
             'role_id' => 'nullable|string',
             'type' => 'nullable|string',
             'version' => 'nullable|string',
+            'tier' => 'nullable|in:normal,star,flame',
             'discovery_thread_id' => 'nullable|string',
         ]);
 
@@ -138,6 +139,7 @@ class ProjectController extends Controller
             'role_id' => 'nullable|string',
             'type' => 'nullable|string',
             'version' => 'nullable|string',
+            'tier' => 'nullable|in:normal,star,flame',
             'discovery_thread_id' => 'nullable|string',
         ]);
 

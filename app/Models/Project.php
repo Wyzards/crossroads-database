@@ -8,6 +8,7 @@ use App\CommunityVetted;
 use App\Models\ProjectAttachment;
 use App\Models\ProjectLink;
 use App\ProjectStage;
+use App\ProjectTier;
 use App\ProjectType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,7 @@ class Project extends Model
         'community_vetted',
         'project_stage',
         'accessibility',
+        'tier',
     ];
 
     protected $casts = [
@@ -42,6 +44,7 @@ class Project extends Model
         'community_vetted' => CommunityVetted::class,
         'project_stage' => ProjectStage::class,
         'accessibility' => Accessibility::class,
+        'tier' => ProjectTier::class,
         'type' => ProjectType::class,
     ];
 

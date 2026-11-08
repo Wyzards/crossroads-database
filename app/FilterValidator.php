@@ -46,6 +46,7 @@ class FilterValidator
                 'community_vetted',
                 'project_stage',
                 'accessibility',
+                'tier',
             ]);
     }
 }
