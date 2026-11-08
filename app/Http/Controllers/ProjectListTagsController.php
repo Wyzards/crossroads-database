@@ -85,7 +85,8 @@ class ProjectListTagsController extends Controller
         $tags = $list->tags()->get();
         $matched = $this->evaluateTags($tags, $project);
 
-        return response()->json([$matched->values()]);
+        // Return the tag array itself (not wrapped in another array) — the client expects ProjectListTag[].
+        return response()->json($matched->values());
     }
 
     public function evaluateBulk(ProjectList $list, Request $request)
