@@ -22,6 +22,7 @@ use App\Http\Controllers\SystemController;
 use App\Http\Controllers\XpEventDefinitionController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ProjectContentController;
 use Illuminate\Support\Facades\Route;
 
@@ -147,6 +148,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{project}/links', [ProjectLinkController::class, 'index']);
         Route::post('/{project}/links', [ProjectLinkController::class, 'store']);
         Route::delete('/{project}/links/{link}', [ProjectLinkController::class, 'destroy']);
+    });
+
+    Route::prefix('applications')->group(function () {
+        Route::get('/', [ApplicationController::class, 'index']);
+        Route::post('/', [ApplicationController::class, 'store']);
+        Route::get('/{application}', [ApplicationController::class, 'show']);
+        Route::put('/{application}', [ApplicationController::class, 'update']);
+        Route::put('/{application}/working', [ApplicationController::class, 'setWorking']);
+        Route::post('/{application}/files', [ApplicationController::class, 'addFile']);
+        Route::get('/{application}/files', [ApplicationController::class, 'files']);
+        Route::post('/{application}/submit', [ApplicationController::class, 'submit']);
+        Route::post('/{application}/withdraw', [ApplicationController::class, 'withdraw']);
+        Route::post('/{application}/accept', [ApplicationController::class, 'accept']);
+        Route::post('/{application}/reject', [ApplicationController::class, 'reject']);
     });
 
     Route::prefix('tags')->group(function () {
