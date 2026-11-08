@@ -15,6 +15,7 @@ use App\Http\Controllers\BadgeProgressionController;
 use App\Http\Controllers\EraController;
 use App\Http\Controllers\UserBadgeController;
 use App\Http\Controllers\XpController;
+use App\Http\Controllers\GameNightController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
@@ -29,6 +30,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{era}', [EraController::class, 'show']);
         Route::put('/{era}', [EraController::class, 'update']);
         Route::post('/{era}/activate', [EraController::class, 'activate']);
+    });
+
+    Route::prefix('game-nights')->group(function () {
+        Route::get('/', [GameNightController::class, 'index']);
+        Route::post('/', [GameNightController::class, 'store']);
+        Route::get('/active', [GameNightController::class, 'active']);
+        Route::get('/{gameNight}', [GameNightController::class, 'show']);
+        Route::put('/{gameNight}', [GameNightController::class, 'update']);
+        Route::post('/{gameNight}/attendees', [GameNightController::class, 'addAttendees']);
+        Route::post('/{gameNight}/rsvps', [GameNightController::class, 'markRsvps']);
     });
 
     Route::prefix('xp-event-definitions')->group(function () {
