@@ -14,7 +14,7 @@ class ProjectListTagsController extends Controller
     // LIST TAGS
     public function index(ProjectList $list)
     {
-        return response()->json($list->tags()->get());
+        return response()->json($list->forumTags());
     }
 
     // CREATE TAG
@@ -32,7 +32,7 @@ class ProjectListTagsController extends Controller
 
         $currentCount = $list->tags()->count();
 
-        if ($currentCount >= 20)
+        if ($currentCount >= ProjectList::MAX_FORUM_TAGS)
         {
             return response()->json([
                 'error' => 'Maximum of 20 tags allowed per project list'
@@ -82,8 +82,8 @@ class ProjectListTagsController extends Controller
 
     public function evaluate(ProjectList $list, Project $project)
     {
-        $tags = $list->tags()->get();
-        $matched = $this->evaluateTags($tags, $project);
+        $tags = $list->forumTags();
+        $matched = $this->evaluateTags($tags, $project->load('tags'));
 
         // Return the tag array itself (not wrapped in another array) — the client expects ProjectListTag[].
         return response()->json($matched->values());
@@ -96,8 +96,8 @@ class ProjectListTagsController extends Controller
             'project_ids.*' => 'integer',
         ]);
 
-        $projects = Project::whereIn('id', $data['project_ids'])->get();
-        $tags = $list->tags()->get();
+        $projects = Project::with('tags')->whereIn('id', $data['project_ids'])->get();
+        $tags = $list->forumTags();
 
         $result = [];
 

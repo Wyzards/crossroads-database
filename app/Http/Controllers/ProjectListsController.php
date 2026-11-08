@@ -10,12 +10,12 @@ class ProjectListsController extends Controller
 {
     public function index()
     {
-        return ProjectList::with('entries', 'tags')->get(); // minimal, just the metadata
+        return ProjectList::all()->map(fn($list) => $list->loadForResponse());
     }
 
     public function show(ProjectList $list)
     {
-        return response()->json($list->load('entries', 'tags'));
+        return response()->json($list->loadForResponse());
     }
 
     public function store(Request $request)
@@ -25,6 +25,7 @@ class ProjectListsController extends Controller
             'channel_id' => 'nullable|string',
             'filters' => 'required|array',
             'is_active' => 'boolean',
+            'featured_tags' => 'boolean',
         ]);
 
         if (!FilterValidator::validate($data['filters']))
@@ -35,7 +36,7 @@ class ProjectListsController extends Controller
         return response()->json(
             ProjectList::create($data)
                 ->refresh()
-                ->load('entries', 'tags'),
+                ->loadForResponse(),
             201
         );
     }
@@ -47,6 +48,7 @@ class ProjectListsController extends Controller
             'channel_id' => 'sometimes|string',
             'filters' => 'sometimes|array',
             'is_active' => 'boolean',
+            'featured_tags' => 'boolean',
         ]);
 
         if (isset($data['filters']) && !FilterValidator::validate($data['filters']))
@@ -56,7 +58,7 @@ class ProjectListsController extends Controller
 
         $list->update($data);
 
-        return response()->json($list->load('entries', 'tags'));
+        return response()->json($list->loadForResponse());
     }
 
     public function destroy(ProjectList $list)

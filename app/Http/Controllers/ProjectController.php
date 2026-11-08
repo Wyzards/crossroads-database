@@ -11,13 +11,13 @@ class ProjectController extends Controller
     public function index()
     {
         // Load projects with related links, attachments, and staff + users
-        $projects = Project::with(['links', 'attachments', 'staff.user'])->get();
+        $projects = Project::with(Project::RELATIONS)->get();
         return response()->json($projects);
     }
 
     public function show(Project $project)
     {
-        return response()->json($project->load('links', 'attachments', 'staff.user'));
+        return response()->json($project->load(...Project::RELATIONS));
     }
 
     public function showByName(string $name)
@@ -34,7 +34,7 @@ class ProjectController extends Controller
                 return response()->json(['message' => 'Project not found'], 404);
             }
 
-            return response()->json($project->load('links', 'attachments', 'staff.user'));
+            return response()->json($project->load(...Project::RELATIONS));
         } catch (\Throwable $e)
         {
             \Log::error('Error in showByName: ' . $e->getMessage(), [
@@ -65,7 +65,7 @@ class ProjectController extends Controller
             return response()->json(['message' => 'Project not found'], 404);
         }
 
-        return response()->json($project->load('links', 'attachments', 'staff.user'));
+        return response()->json($project->load(...Project::RELATIONS));
     }
 
     public function existsByGuild(string $guildId)
@@ -83,10 +83,10 @@ class ProjectController extends Controller
 
         if (!$filter)
         {
-            return Project::with('links', 'attachments', 'staff.user')->get();
+            return Project::with(...Project::RELATIONS)->get();
         }
 
-        $projects = Project::with('links', 'attachments', 'staff.user')
+        $projects = Project::with(...Project::RELATIONS)
             ->get()
             ->filter(function ($project) use ($filter) {
                 return FilterEvaluator::matches($project, $filter);
@@ -105,19 +105,24 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'display_name' => 'nullable|string|max:255',
             'status' => 'nullable|string',
-            'description' => 'nullable|string',
             'ip' => 'nullable|string',
             'role_id' => 'nullable|string',
-            'type' => 'nullable|string',
             'version' => 'nullable|string',
             'tier' => 'nullable|in:normal,star,flame',
             'discovery_thread_id' => 'nullable|string',
+            'format' => 'sometimes|in:server,map',
+            'join_method' => 'nullable|in:direct,network',
+            'network_name' => 'nullable|string|max:255',
+            'join_instructions' => 'nullable|string|max:255',
+            'discord_kind' => 'nullable|in:own,network,none',
+            'discord_invite' => 'nullable|string|max:255',
+            'has_dedicated_announcements' => 'nullable|boolean',
         ]);
 
         return response()->json(
             Project::create($validated)
                 ->refresh()
-                ->load('links', 'attachments', 'staff.user'),
+                ->load(...Project::RELATIONS),
             201
         );
     }
@@ -134,17 +139,22 @@ class ProjectController extends Controller
             'accessibility' => 'nullable|string',
             'architect_approval' => 'nullable|string',
             'community_vetted' => 'nullable|string',
-            'description' => 'nullable|string',
             'ip' => 'nullable|string',
             'role_id' => 'nullable|string',
-            'type' => 'nullable|string',
             'version' => 'nullable|string',
             'tier' => 'nullable|in:normal,star,flame',
             'discovery_thread_id' => 'nullable|string',
+            'format' => 'sometimes|in:server,map',
+            'join_method' => 'nullable|in:direct,network',
+            'network_name' => 'nullable|string|max:255',
+            'join_instructions' => 'nullable|string|max:255',
+            'discord_kind' => 'nullable|in:own,network,none',
+            'discord_invite' => 'nullable|string|max:255',
+            'has_dedicated_announcements' => 'nullable|boolean',
         ]);
 
         $project->update($validated);
-        return response()->json($project->load('links', 'attachments', 'staff.user'));
+        return response()->json($project->load(...Project::RELATIONS));
     }
 
     public function destroy(Project $project)

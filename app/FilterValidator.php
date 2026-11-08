@@ -5,43 +5,39 @@ class FilterValidator
 {
     public static function validate($filter): bool
     {
-        if (isset($filter['all']))
-        {
-            if (!is_array($filter['all']))
-                return false;
+        if (!is_array($filter))
+            return false;
 
-            foreach ($filter['all'] as $rule)
-            {
+        if (!isset($filter['all']) && !isset($filter['any']))
+            return self::validateRule($filter);
+
+        // A group: validate both halves (previously "any" went unchecked when "all" was present).
+        foreach (['all', 'any'] as $key)
+        {
+            if (!isset($filter[$key]))
+                continue;
+            if (!is_array($filter[$key]))
+                return false;
+            foreach ($filter[$key] as $rule)
                 if (!self::validate($rule))
                     return false;
-            }
-
-            return true;
         }
 
-        if (isset($filter['any']))
-        {
-            if (!is_array($filter['any']))
-                return false;
-
-            foreach ($filter['any'] as $rule)
-            {
-                if (!self::validate($rule))
-                    return false;
-            }
-
-            return true;
-        }
-
-        return self::validateRule($filter);
+        return true;
     }
 
     private static function validateRule($rule): bool
     {
-        return isset($rule['field'], $rule['operator'], $rule['value']) &&
-            in_array($rule['operator'], ['=', '!=']) &&
+        if (!isset($rule['field'], $rule['operator'], $rule['value']))
+            return false;
+
+        // Tag-set fields compare by membership; the others by value.
+        if (in_array($rule['field'], FilterEvaluator::TAG_FIELDS))
+            return in_array($rule['operator'], ['has', '!has']);
+
+        return in_array($rule['operator'], ['=', '!=']) &&
             in_array($rule['field'], [
-                'type',
+                'format',
                 'architect_approval',
                 'community_vetted',
                 'project_stage',

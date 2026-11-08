@@ -15,6 +15,7 @@ class ProjectAttachment extends Model
     use HasFactory;
     protected $fillable = [
         'project_id',
+        'section_id',
         'path',
     ];
 

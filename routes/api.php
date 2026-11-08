@@ -21,6 +21,8 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SystemController;
 use App\Http\Controllers\XpEventDefinitionController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\ProjectContentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -131,10 +133,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{project}/attachments', [ProjectAttachmentController::class, 'store']);
         Route::delete('/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy']);
 
+        // Content: tags, sections (text + files), banner
+        Route::put('/{project}/tags', [ProjectContentController::class, 'setTags']);
+        Route::post('/{project}/sections', [ProjectContentController::class, 'addSection']);
+        Route::put('/{project}/sections/{section}', [ProjectContentController::class, 'updateSection']);
+        Route::delete('/{project}/sections/{section}', [ProjectContentController::class, 'deleteSection']);
+        Route::post('/{project}/sections/{section}/files', [ProjectContentController::class, 'setSectionFiles']);
+        Route::post('/{project}/banner', [ProjectContentController::class, 'setBanner']);
+        Route::delete('/{project}/banner', [ProjectContentController::class, 'deleteBanner']);
+        Route::get('/{project}/files', [ProjectContentController::class, 'files']);
+
         // Links
         Route::get('/{project}/links', [ProjectLinkController::class, 'index']);
         Route::post('/{project}/links', [ProjectLinkController::class, 'store']);
         Route::delete('/{project}/links/{link}', [ProjectLinkController::class, 'destroy']);
+    });
+
+    Route::prefix('tags')->group(function () {
+        Route::get('/', [TagController::class, 'index']);
+        Route::post('/', [TagController::class, 'store']);
+        Route::put('/{tag}', [TagController::class, 'update']);
+        Route::delete('/{tag}', [TagController::class, 'destroy']);
     });
 
     Route::prefix('project-lists')->group(function () {
