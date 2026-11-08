@@ -182,7 +182,7 @@ class ApplicationController extends Controller
             if ($stale = $this->staleDecision($application, $data['revision']))
                 return $stale;
             if (!in_array($data['route'], ApplicationAcceptor::allowedRoutes($application->snapshot)))
-                return response()->json(['message' => "The {$data['route']} route needs a project anyone can play for free."], 422);
+                return response()->json(['message' => "The {$data['route']} route isn't open to this project: free-to-play projects go to vetting or the Hunt queue, others to the watchlist."], 422);
 
             [$project, $notes] = ApplicationAcceptor::accept($application, $data['route'], $data['reviewer_discord_id']);
             return response()->json([

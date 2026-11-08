@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\Storage;
  * Accepting an application = writing its snapshot into a project in one transaction: a new project,
  * or the unlisted one it re-applies for. The route sets the standing (the bot's sync then builds
  * the Discord side from it):
- * - watchlist: approved, unvetted (blue; in development or not ready yet)
- * - vetting:   approved, vetting_queue (blue until vetted); only for public (free) projects
- * - hunt:      hidden, project_hunt_queue; only for public projects (the hunt list requires it)
+ * - vetting:   approved, vetting_queue (blue until vetted). Free-to-play projects.
+ * - hunt:      hidden, project_hunt_queue: free-to-play projects reviewers think may not survive
+ *              vetting; the hunt-queue list posts them for an up/down vote.
+ * - watchlist: approved, unvetted (blue). Projects that can't be vetted: not free to play
+ *              (in development, closed test, whitelist or paid). Ryan, 2026-11-08.
  */
 class ApplicationAcceptor
 {
@@ -26,11 +28,11 @@ class ApplicationAcceptor
         'hunt' => ['architect_approval' => 'hidden', 'community_vetted' => 'project_hunt_queue', 'decision' => ApplicationReview::ACCEPT_HUNT],
     ];
 
-    /** Routes the snapshot allows. */
+    /** Routes the snapshot allows: free to play -> vetting or hunt; anything else -> watchlist. */
     public static function allowedRoutes(array $s): array
     {
         $public = ($s['accessibility'] ?? null) === 'public';
-        return $public ? ['watchlist', 'vetting', 'hunt'] : ['watchlist'];
+        return $public ? ['vetting', 'hunt'] : ['watchlist'];
     }
 
     /** @return array{0: Project, 1: string[]} the project and notes (e.g. skipped unknown tags) */
