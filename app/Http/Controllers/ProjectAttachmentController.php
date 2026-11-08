@@ -18,37 +18,6 @@ class ProjectAttachmentController extends Controller
         return $project->attachments()->get();
     }
 
-    public function store(Request $request, Project $project)
-    {
-        Log::info($request->all());
-
-        // Validate 'files' as array (required for empty overwrite) and max size for each file
-        $validated = $request->validate([
-            'files' => ['array', 'required'],
-            'files.*' => ['max:10240'], // max size in KB (optional, remove if no limit)
-        ]);
-
-        // Get uploaded files (UploadedFile objects)
-        $files = $request->file('files', []);
-
-        // Delete previous attachments
-        $project->attachments()->delete();
-
-        $attachments = [];
-
-        foreach ($files as $file)
-        {
-            $path = $file->store(
-                "projects/{$project->id}/attachments",
-                'local'
-            );
-
-            $attachments[] = $project->attachments()->create(['path' => $path]);
-        }
-
-        return response()->json($attachments, 201);
-    }
-
     public function destroy(Project $project, ProjectAttachment $attachment)
     {
         if ($attachment->project_id !== $project->id)
@@ -59,23 +28,5 @@ class ProjectAttachmentController extends Controller
         $attachment->delete();
 
         return response()->noContent();
-    }
-
-    public function downloadAll(Project $project)
-    {
-        $attachments = $project->attachments;
-
-        $buffers = [];
-
-        foreach ($attachments as $attachment)
-        {
-            $filePath = Storage::disk('local')->path($attachment->path);
-            if (file_exists($filePath))
-            {
-                $buffers[] = base64_encode(file_get_contents($filePath));
-            }
-        }
-
-        return response()->json($buffers);
     }
 }

@@ -9,7 +9,6 @@ use App\Models\ProjectAttachment;
 use App\Models\ProjectLink;
 use App\ProjectStage;
 use App\ProjectTier;
-use App\ProjectType;
 use App\ProjectFormat;
 use App\JoinMethod;
 use App\DiscordKind;
@@ -29,10 +28,8 @@ class Project extends Model
         'name',
         'display_name',
         'status',
-        'description',
         'ip',
         'role_id',
-        'type',
         'version',
         'discovery_thread_id',
         'architect_approval',
@@ -59,7 +56,6 @@ class Project extends Model
         'project_stage' => ProjectStage::class,
         'accessibility' => Accessibility::class,
         'tier' => ProjectTier::class,
-        'type' => ProjectType::class,
         'format' => ProjectFormat::class,
         'join_method' => JoinMethod::class,
         'discord_kind' => DiscordKind::class,
