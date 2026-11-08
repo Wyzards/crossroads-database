@@ -23,6 +23,7 @@ use App\Http\Controllers\XpEventDefinitionController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\TagRequestController;
 use App\Http\Controllers\ProjectContentController;
 use Illuminate\Support\Facades\Route;
 
@@ -162,6 +163,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{application}/withdraw', [ApplicationController::class, 'withdraw']);
         Route::post('/{application}/accept', [ApplicationController::class, 'accept']);
         Route::post('/{application}/reject', [ApplicationController::class, 'reject']);
+    });
+
+    Route::prefix('tag-requests')->group(function () {
+        Route::post('/', [TagRequestController::class, 'store']);
+        Route::get('/{tagRequest}', [TagRequestController::class, 'show']);
+        Route::put('/{tagRequest}', [TagRequestController::class, 'update']);
+        Route::post('/{tagRequest}/decide', [TagRequestController::class, 'decide']);
     });
 
     Route::prefix('tags')->group(function () {
