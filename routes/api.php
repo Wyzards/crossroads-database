@@ -24,6 +24,7 @@ use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\TagRequestController;
+use App\Http\Controllers\AnnouncementConnectionController;
 use App\Http\Controllers\ProjectContentController;
 use Illuminate\Support\Facades\Route;
 
@@ -161,6 +162,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{application}/withdraw', [ApplicationController::class, 'withdraw']);
         Route::post('/{application}/accept', [ApplicationController::class, 'accept']);
         Route::post('/{application}/reject', [ApplicationController::class, 'reject']);
+    });
+
+    Route::prefix('announcement-connections')->group(function () {
+        Route::get('/', [AnnouncementConnectionController::class, 'index']);
+        Route::post('/', [AnnouncementConnectionController::class, 'store']);
+        Route::put('/{connection}', [AnnouncementConnectionController::class, 'update']);
     });
 
     Route::prefix('tag-requests')->group(function () {

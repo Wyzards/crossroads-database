@@ -96,6 +96,8 @@ class ApplicationAcceptor
             $oldPaths = self::replaceFiles($application, $project, $s);
 
             $application->update(['status' => Application::ACCEPTED, 'project_id' => $project->id]);
+            // Announcement follows set up during the application now belong to the project.
+            \App\Models\AnnouncementConnection::where('application_id', $application->id)->update(['project_id' => $project->id]);
             $application->reviews()->create([
                 'revision' => $application->revision,
                 'decision' => $standing['decision'],
