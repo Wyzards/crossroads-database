@@ -29,6 +29,7 @@ class Project extends Model
         'display_name',
         'status',
         'ip',
+        'download_url',
         'role_id',
         'version',
         'discovery_thread_id',

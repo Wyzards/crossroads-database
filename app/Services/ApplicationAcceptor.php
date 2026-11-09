@@ -52,6 +52,7 @@ class ApplicationAcceptor
                 'project_stage' => $s['project_stage'],
                 'accessibility' => $s['accessibility'],
                 'ip' => $s['ip'] ?? null,
+                'download_url' => $s['download_url'] ?? null,
                 'version' => $s['version'] ?? null,
                 'join_method' => $s['join_method'] ?? null,
                 'network_name' => $s['network_name'] ?? null,

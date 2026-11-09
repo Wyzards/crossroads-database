@@ -37,6 +37,7 @@ class ApplicationContent
             'working.project_stage' => 'nullable|in:in_development,alpha,beta,released',
             'working.accessibility' => 'nullable|in:public,paid,exclusive,closed',
             'working.ip' => 'nullable|string|max:100',
+            'working.download_url' => ['nullable', 'string', 'max:500', 'regex:/^https?:\/\/\S+$/i'],
             'working.version' => 'nullable|string|max:40',
             'working.join_method' => 'nullable|in:direct,network',
             'working.network_name' => 'nullable|string|max:100',
@@ -72,7 +73,7 @@ class ApplicationContent
     {
         return [
             'name' => null, 'format' => null, 'project_stage' => null, 'accessibility' => null,
-            'ip' => null, 'version' => null, 'join_method' => null, 'network_name' => null, 'join_instructions' => null,
+            'ip' => null, 'download_url' => null, 'version' => null, 'join_method' => null, 'network_name' => null, 'join_instructions' => null,
             'discord_kind' => null, 'discord_invite' => null, 'guild_id' => null, 'discord_server_name' => null,
             'discord_member_count' => null, 'has_dedicated_announcements' => null,
             'sections' => [['text' => null, 'file_ids' => []]], 'banner_file_id' => null,
@@ -105,6 +106,9 @@ class ApplicationContent
             if (empty($w['ip'])) $add('joining', ($w['join_method'] ?? null) === 'network' ? 'hub address' : 'server address');
             if (($w['join_method'] ?? null) === 'network' && empty($w['join_instructions'])) $add('joining', 'how to reach the mode from the hub');
         }
+
+        // A downloadable map needs its download link (Ryan, 2026-11-09).
+        if (($w['format'] ?? null) === 'map' && $playable && empty($w['download_url'])) $add('joining', 'download link');
 
         if (empty($w['discord_kind'])) $add('discord', 'Discord');
         elseif ($w['discord_kind'] !== 'none') {
