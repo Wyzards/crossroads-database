@@ -25,6 +25,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\TagRequestController;
 use App\Http\Controllers\AnnouncementConnectionController;
+use App\Http\Controllers\InviteCheckController;
 use App\Http\Controllers\ProjectContentController;
 use Illuminate\Support\Facades\Route;
 
@@ -162,6 +163,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{application}/withdraw', [ApplicationController::class, 'withdraw']);
         Route::post('/{application}/accept', [ApplicationController::class, 'accept']);
         Route::post('/{application}/reject', [ApplicationController::class, 'reject']);
+    });
+
+    Route::prefix('invite-checks')->group(function () {
+        Route::get('/', [InviteCheckController::class, 'index']);
+        Route::post('/', [InviteCheckController::class, 'store']);
+        Route::delete('/{id}', [InviteCheckController::class, 'destroy']);
     });
 
     Route::prefix('announcement-connections')->group(function () {
