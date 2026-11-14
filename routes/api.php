@@ -138,6 +138,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Content: tags, sections (text + files), banner
         Route::put('/{project}/tags', [ProjectContentController::class, 'setTags']);
         Route::post('/{project}/sections', [ProjectContentController::class, 'addSection']);
+        Route::put('/{project}/sections/order', [ProjectContentController::class, 'orderSections']);
         Route::put('/{project}/sections/{section}', [ProjectContentController::class, 'updateSection']);
         Route::delete('/{project}/sections/{section}', [ProjectContentController::class, 'deleteSection']);
         Route::post('/{project}/sections/{section}/files', [ProjectContentController::class, 'setSectionFiles']);

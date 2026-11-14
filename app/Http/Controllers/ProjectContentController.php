@@ -66,6 +66,21 @@ class ProjectContentController extends Controller
         return $this->fresh($project);
     }
 
+    /** Sets the section order. Body: {ids: [section ids, in the new order]}; must be exactly this project's sections. */
+    public function orderSections(Request $request, Project $project)
+    {
+        $data = $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        $own = $project->sections()->pluck('id')->sort()->values()->all();
+        $given = collect($data['ids'])->sort()->values()->all();
+        if ($own !== $given)
+            return response()->json(['message' => 'Give every section of this project exactly once.'], 422);
+        DB::transaction(function () use ($project, $data) {
+            foreach (array_values($data['ids']) as $i => $id)
+                $project->sections()->where('id', $id)->update(['position' => $i + 1]);
+        });
+        return $this->fresh($project);
+    }
+
     /** Deletes a section and its files, then closes the gap in positions. */
     public function deleteSection(Project $project, ProjectSection $section)
     {
