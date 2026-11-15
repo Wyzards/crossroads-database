@@ -427,9 +427,11 @@ class VettingController extends Controller
                         foreach ($contexts as $c)
                         {
                             [$kind, $id] = explode(':', $c, 2);
-                            // "kind:*" is the range ["kind:", "kind;"): ';' follows ':' so no LIKE wildcards are involved.
+                            // "kind:*" is a prefix match. Not a string range: the DB's UCA collation doesn't order
+                            // punctuation by code point, so ["kind:", "kind;") matched nothing in MariaDB. The kind's
+                            // "_" is escaped so it can't act as a LIKE wildcard (the regex allows only [a-z_]).
                             $id === '*'
-                                ? $q->orWhere(fn($w) => $w->where('context', '>=', "$kind:")->where('context', '<', "$kind;"))
+                                ? $q->orWhere('context', 'like', str_replace('_', '\\_', $kind) . ':%')
                                 : $q->orWhere('context', $c);
                         }
                     })->get();
