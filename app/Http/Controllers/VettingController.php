@@ -71,6 +71,8 @@ class VettingController extends Controller
         return [
             'enabled' => $s->enabled,
             'enabled_at' => $s->enabled_at?->toIso8601String(),
+            'hunt_in_poll' => $s->hunt_in_poll,
+            'max_candidates' => $s->max_candidates,
             ...$s->only(self::SETTINGS_PING),
             'lease' => VettingLease::holder(), // never the token
         ];
@@ -83,7 +85,7 @@ class VettingController extends Controller
 
     public function updateSettings(Request $request)
     {
-        $data = $request->validate(['enabled' => 'sometimes|boolean']
+        $data = $request->validate(['enabled' => 'sometimes|boolean', 'hunt_in_poll' => 'sometimes|boolean', 'max_candidates' => 'sometimes|integer|min:1|max:10']
             + array_fill_keys(self::SETTINGS_PING, 'sometimes|nullable|string|max:30'));
 
         $s = VettingSetting::row();

@@ -11,6 +11,8 @@ class VettingSetting extends Model
 
     protected $casts = [
         'enabled' => 'boolean',
+        'hunt_in_poll' => 'boolean',
+        'max_candidates' => 'integer',
         'enabled_at' => 'datetime',
         'lease_expires_at' => 'datetime',
     ];

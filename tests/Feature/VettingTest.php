@@ -104,6 +104,16 @@ class VettingTest extends TestCase
         $this->assertSame($first, $this->getJson('/api/vetting/settings')->json('enabled_at'));
     }
 
+    public function test_candidate_policy_defaults_to_queue_only_three_and_validates(): void
+    {
+        $this->actingAs(User::factory()->create(), 'sanctum');
+        $this->getJson('/api/vetting/settings')->assertOk()->assertJsonPath('hunt_in_poll', false)->assertJsonPath('max_candidates', 3);
+        $this->putJson('/api/vetting/settings', ['hunt_in_poll' => true, 'max_candidates' => 10])->assertOk()
+            ->assertJsonPath('hunt_in_poll', true)->assertJsonPath('max_candidates', 10);
+        $this->putJson('/api/vetting/settings', ['max_candidates' => 11])->assertStatus(422);
+        $this->putJson('/api/vetting/settings', ['max_candidates' => 0])->assertStatus(422);
+    }
+
     // ---- cycles ----
 
     public function test_create_cycle_is_idempotent(): void
