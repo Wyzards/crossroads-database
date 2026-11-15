@@ -318,4 +318,46 @@ class VettingTest extends TestCase
         $this->actingAs(User::factory()->create(), 'sanctum');
         $this->getJson('/api/vetting/settings')->assertOk()->assertJsonPath('enabled', false)->assertJsonPath('lease', null);
     }
+
+    // ---- hunt suggestions (step 5) ----
+
+    private function suggestion(array $over = []): array
+    {
+        return $over + ['thread_id' => '9001', 'suggester_discord_id' => '555', 'tier' => 'standard', 'display_name' => 'Cool Server!',
+            'ip' => 'play.cool.net', 'discord_invite' => 'https://discord.gg/x', 'text' => 'It has castles.', 'reviewer_discord_id' => '777'];
+    }
+
+    public function test_hunt_suggestion_creates_a_hidden_hunt_project(): void
+    {
+        $this->actingAs(User::factory()->create(), 'sanctum');
+        $res = $this->postJson('/api/hunt-suggestions', $this->suggestion())->assertCreated();
+        $p = Project::findOrFail($res->json('id'));
+        $this->assertSame('cool-server', $p->name);
+        $this->assertSame('Cool Server!', $p->display_name);
+        $this->assertSame('hidden', $p->architect_approval->value);
+        $this->assertSame('project_hunt_queue', $p->community_vetted->value);
+        $this->assertSame('public', $p->accessibility->value);
+        $this->assertSame('released', $p->project_stage->value);
+        $this->assertSame('server', $p->format->value);
+        $this->assertSame('play.cool.net', $p->ip);
+        $this->assertSame('9001', $p->suggestion_thread_id);
+        $this->assertSame('555', \App\Models\CrossroadsUser::find($p->suggested_by_user_id)->discord_id);
+        $this->assertSame(['It has castles.'], $p->sections()->pluck('text')->all());
+    }
+
+    public function test_hunt_suggestion_conflicts(): void
+    {
+        $this->actingAs(User::factory()->create(), 'sanctum');
+        $this->postJson('/api/hunt-suggestions', $this->suggestion())->assertCreated();
+        // same post again
+        $this->postJson('/api/hunt-suggestions', $this->suggestion(['display_name' => 'Other']))->assertStatus(409);
+        // same slug, different post
+        $this->postJson('/api/hunt-suggestions', $this->suggestion(['thread_id' => '9002', 'display_name' => 'cool server']))->assertStatus(409);
+        $this->assertSame(1, Project::count());
+        // no text -> no section; an existing suggester row is reused
+        $this->postJson('/api/hunt-suggestions', $this->suggestion(['thread_id' => '9003', 'display_name' => 'Another', 'text' => null]))->assertCreated();
+        $this->assertSame(1, \App\Models\CrossroadsUser::where('discord_id', '555')->count());
+        $this->postJson('/api/hunt-suggestions', $this->suggestion(['thread_id' => '9004', 'display_name' => 'Long', 'text' => str_repeat('x', 2001)]))->assertStatus(422);
+        $this->postJson('/api/hunt-suggestions', $this->suggestion(['thread_id' => '9005', 'tier' => 'huge']))->assertStatus(422);
+    }
 }

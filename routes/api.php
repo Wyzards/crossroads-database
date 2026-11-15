@@ -28,6 +28,7 @@ use App\Http\Controllers\AnnouncementConnectionController;
 use App\Http\Controllers\InviteCheckController;
 use App\Http\Controllers\ProjectContentController;
 use App\Http\Controllers\VettingController;
+use App\Http\Controllers\HuntSuggestionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -192,6 +193,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/{tag}', [TagController::class, 'update']);
         Route::delete('/{tag}', [TagController::class, 'destroy']);
     });
+
+    Route::post('/hunt-suggestions', [HuntSuggestionController::class, 'store']);
 
     Route::prefix('vetting')->group(function () {
         Route::get('/settings', [VettingController::class, 'settings']);

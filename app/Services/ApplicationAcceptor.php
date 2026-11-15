@@ -69,7 +69,7 @@ class ApplicationAcceptor
                 $project->update($fields);
                 $notes[] = "updated existing project {$project->name}";
             } else {
-                $project = Project::create($fields + ['name' => self::uniqueName($s['name'])]);
+                $project = Project::create($fields + ['name' => ApplicationContent::uniqueName($s['name'])]);
             }
 
             // Content: the snapshot replaces what was there.
@@ -152,15 +152,5 @@ class ApplicationAcceptor
             $row->update(['position' => $i + 1]);
 
         return $old->pluck('path')->all();
-    }
-
-    /** name = slug of the display name, made unique (the channel name; includes deleted projects). */
-    private static function uniqueName(string $displayName): string
-    {
-        $base = ApplicationContent::slug($displayName);
-        $name = $base;
-        for ($n = 2; Project::withTrashed()->where('name', $name)->exists(); $n++)
-            $name = "$base-$n";
-        return $name;
     }
 }

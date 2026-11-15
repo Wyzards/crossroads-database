@@ -129,6 +129,16 @@ class ApplicationContent
         return Str::slug($name) ?: 'project';
     }
 
+    /** name = slug of the display name, made unique (the channel name; includes deleted projects). */
+    public static function uniqueName(string $displayName): string
+    {
+        $base = self::slug($displayName);
+        $name = $base;
+        for ($n = 2; Project::withTrashed()->where('name', $name)->exists(); $n++)
+            $name = "$base-$n";
+        return $name;
+    }
+
     /** Listed = in the "discovery" list (whose filter mirrors the bot's ProjectRules.isInMainList). */
     public static function isListed(Project $project): bool
     {
