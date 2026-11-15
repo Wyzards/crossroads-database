@@ -30,7 +30,23 @@ class VettingController extends Controller
     private const STEPS = ['choose', 'hunt_cleanup', 'close', 'poll_close', 'start', 'event', 'announce', 'gn_start', 'gn_end'];
 
     /** Write-once fields: null -> set, same value -> no-op, different value -> 409. */
-    private const WRITE_ONCE = ['chosen_project_id', 'chosen_by', 'announce_message_id'];
+    private const WRITE_ONCE = ['chosen_project_id', 'chosen_by', 'announce_message_id', 'poll_thread_id', 'poll_message_id', 'candidates', 'poll_results'];
+
+    /** Write-once fields that hold structures: compared by value (key order ignored). */
+    private const WRITE_ONCE_JSON = ['candidates', 'poll_results'];
+
+    private function canonical(mixed $v): string
+    {
+        $sort = function ($x) use (&$sort) {
+            if (!is_array($x))
+                return $x;
+            $x = array_map($sort, $x);
+            if (!array_is_list($x))
+                ksort($x);
+            return $x;
+        };
+        return json_encode($sort($v));
+    }
 
     private function fence(Request $request): void
     {
@@ -156,6 +172,17 @@ class VettingController extends Controller
             'chosen_project_id' => 'sometimes|nullable|integer|exists:projects,id',
             'chosen_by' => 'sometimes|nullable|in:oldest,only,poll,none',
             'announce_message_id' => 'sometimes|nullable|string|max:30',
+            'poll_thread_id' => 'sometimes|nullable|string|max:30',
+            'poll_message_id' => 'sometimes|nullable|string|max:30',
+            'candidates' => 'sometimes|nullable|array|max:10',
+            'candidates.*.project_id' => 'required|integer',
+            'candidates.*.source' => 'required|in:queue,hunt',
+            'candidates.*.waiting_since' => 'nullable|string|max:40',
+            'candidates.*.answer_id' => 'nullable|integer',
+            'poll_results' => 'sometimes|nullable|array|max:10',
+            'poll_results.*.project_id' => 'required|integer',
+            'poll_results.*.votes' => 'required|integer|min:0',
+            'poll_results.*.voter_ids' => 'present|array',
         ]);
 
         return DB::transaction(function () use ($cycle, $data) {
@@ -166,9 +193,10 @@ class VettingController extends Controller
                 if (!array_key_exists($field, $data) || $data[$field] === null)
                     continue;
                 $current = $cycle->{$field};
+                $json = in_array($field, self::WRITE_ONCE_JSON, true);
                 if ($current === null)
                     $set[$field] = $data[$field];
-                elseif ((string) $current !== (string) $data[$field])
+                elseif ($json ? $this->canonical($current) !== $this->canonical($data[$field]) : (string) $current !== (string) $data[$field])
                     return $this->conflict("$field is already set to a different value");
             }
             if ($set)
@@ -275,7 +303,7 @@ class VettingController extends Controller
         $this->fence($request);
         $data = $request->validate([
             'project_id' => 'required|integer|exists:projects,id',
-            'from' => 'required|in:vetting_queue',
+            'from' => 'required|in:vetting_queue,project_hunt_queue',
         ]);
 
         return DB::transaction(function () use ($cycle, $data) {
@@ -292,6 +320,17 @@ class VettingController extends Controller
                 return $this->conflict('Another project is currently_vetting');
             if ($project->community_vetted?->value !== $data['from'])
                 return $this->conflict("Project is not in {$data['from']}");
+
+            if ($data['from'] === 'project_hunt_queue')
+            {
+                // Promotion: the project must be public and not disqualified, and it is approved in the same
+                // transaction (spec: so a failed vote gets an archives post).
+                if ($project->architect_approval?->value === 'disqualified')
+                    return $this->conflict('Project is disqualified');
+                if ($project->accessibility?->value !== 'public')
+                    return $this->conflict('Only public projects are vetted');
+                $project->architect_approval = 'approved';
+            }
 
             $project->community_vetted = 'currently_vetting';
             $project->save();

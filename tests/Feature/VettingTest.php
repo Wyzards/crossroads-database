@@ -152,6 +152,64 @@ class VettingTest extends TestCase
         $this->getJson('/api/vetting/current')->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $a->id);
     }
 
+
+    // ---- step 4: poll fields and the Hunt start ----
+
+    public function test_poll_fields_are_write_once_structures(): void
+    {
+        $token = $this->lease();
+        $id = $this->cycle($token);
+        $put = fn(array $b) => $this->putJson("/api/vetting/cycles/$id", $b + ['lease_token' => $token]);
+        $cands = [
+            ['project_id' => 1, 'source' => 'queue', 'waiting_since' => '2026-11-01T00:00:00Z', 'answer_id' => 1],
+            ['project_id' => 2, 'source' => 'hunt', 'waiting_since' => null, 'answer_id' => 2],
+        ];
+
+        $put(['candidates' => $cands, 'poll_thread_id' => '900'])->assertOk()->assertJsonPath('candidates.1.source', 'hunt');
+        $put(['candidates' => $cands, 'poll_message_id' => '901'])->assertOk();                 // same value: no-op, new field set
+        $reordered = array_map(fn($c) => array_reverse($c, true), $cands);
+        $put(['candidates' => $reordered])->assertOk();                                          // key order ignored
+        $put(['candidates' => array_reverse($cands)])->assertStatus(409);                        // a different list
+        $put(['poll_thread_id' => '999'])->assertStatus(409);
+        $put(['poll_results' => [['project_id' => 1, 'votes' => 2, 'voter_ids' => ['a', 'b']], ['project_id' => 2, 'votes' => 0, 'voter_ids' => []]]])->assertOk();
+        $put(['poll_results' => [['project_id' => 1, 'votes' => 3, 'voter_ids' => ['a', 'b', 'c']]]])->assertStatus(409);
+        $put(['candidates' => array_fill(0, 11, $cands[0])])->assertStatus(422);                // Discord's poll limit is 10
+        $put(['candidates' => [['project_id' => 1, 'source' => 'elsewhere']]])->assertStatus(422);
+
+        $cycle = VettingCycle::find($id);
+        $this->assertSame('901', $cycle->poll_message_id);
+        $this->assertCount(2, $cycle->poll_results);
+    }
+
+    public function test_start_from_the_hunt_queue_approves_in_the_same_transaction(): void
+    {
+        $token = $this->lease();
+        $id = $this->cycle($token);
+        $start = fn($cid, $p, $from) => $this->postJson("/api/vetting/cycles/$cid/start", ['project_id' => $p->id, 'from' => $from, 'lease_token' => $token]);
+
+        $hunt = $this->project('hunt', 'project_hunt_queue');
+        $hunt->forceFill(['architect_approval' => 'hidden'])->save();
+        $start($id, $hunt, 'vetting_queue')->assertStatus(409);                  // right project, wrong source
+        $this->assertSame('hidden', $hunt->fresh()->architect_approval->value);
+
+        $closed = $this->project('closed', 'project_hunt_queue');
+        $closed->forceFill(['accessibility' => 'closed'])->save();
+        $start($id, $closed, 'project_hunt_queue')->assertStatus(409);           // only public projects are vetted
+        $dq = $this->project('dq', 'project_hunt_queue');
+        $dq->forceFill(['architect_approval' => 'disqualified'])->save();
+        $start($id, $dq, 'project_hunt_queue')->assertStatus(409);
+        $this->assertSame('project_hunt_queue', $closed->fresh()->community_vetted->value);
+
+        $start($id, $hunt, 'project_hunt_queue')->assertOk()->assertJsonPath('started_from', 'project_hunt_queue');
+        $fresh = $hunt->fresh();
+        $this->assertSame('currently_vetting', $fresh->community_vetted->value);
+        $this->assertSame('approved', $fresh->architect_approval->value);
+        $start($id, $hunt, 'project_hunt_queue')->assertOk();                    // repeat: no-op
+        $other = $this->project('other', 'project_hunt_queue');
+        $start($this->cycle($token, '2026-11-27'), $other, 'project_hunt_queue')->assertStatus(409); // one vote at a time
+        $this->assertSame('project_hunt_queue', $other->fresh()->community_vetted->value);
+    }
+
     // ---- close ----
 
     public function test_close_is_idempotent_and_guards(): void

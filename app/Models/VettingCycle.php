@@ -12,6 +12,8 @@ class VettingCycle extends Model
     protected $casts = [
         'week_of' => 'date:Y-m-d',
         'close_votes' => 'array',
+        'candidates' => 'array',
+        'poll_results' => 'array',
         'closed_at' => 'datetime',
         'started_at' => 'datetime',
     ];
