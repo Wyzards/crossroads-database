@@ -428,13 +428,23 @@ class VettingController extends Controller
                         {
                             [$kind, $id] = explode(':', $c, 2);
                             // "kind:*" is a prefix match. Not a string range: the DB's UCA collation doesn't order
-                            // punctuation by code point, so ["kind:", "kind;") matched nothing in MariaDB. The kind's
-                            // "_" is escaped so it can't act as a LIKE wildcard (the regex allows only [a-z_]).
+                            // punctuation by code point, so ["kind:", "kind;") matched nothing in MariaDB. LIKE here is
+                            // only a prefilter ("_" in a kind is a wildcard, and LIKE escaping differs between MariaDB
+                            // and SQLite); the exact match is the PHP filter below.
                             $id === '*'
-                                ? $q->orWhere('context', 'like', str_replace('_', '\\_', $kind) . ':%')
+                                ? $q->orWhere('context', 'like', "$kind:%")
                                 : $q->orWhere('context', $c);
                         }
-                    })->get();
+                    })->get()
+                    ->filter(function ($e) use ($contexts) {
+                        foreach ($contexts as $c)
+                        {
+                            [$kind, $id] = explode(':', $c, 2);
+                            if ($id === '*' ? str_starts_with($e->context, "$kind:") : $e->context === $c)
+                                return true;
+                        }
+                        return false;
+                    })->values();
 
                 $back = [];
                 foreach ($events as $e)
