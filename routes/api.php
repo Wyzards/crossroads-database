@@ -212,6 +212,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/cycles/{cycle}/delete', [VettingController::class, 'destroyCycle']);
         Route::put('/projects/{project}/thread', [VettingController::class, 'setThread']);
         Route::post('/cancel', [VettingController::class, 'cancel']);
+        Route::post('/test-cleanup', [VettingController::class, 'testCleanup']);
     });
 
     Route::prefix('project-lists')->group(function () {

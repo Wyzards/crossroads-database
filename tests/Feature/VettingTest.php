@@ -2,9 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Badge;
+use App\Models\CrossroadsUser;
+use App\Models\GameNight;
+use App\Models\GameNightAttendee;
 use App\Models\Project;
 use App\Models\ProjectList;
 use App\Models\User;
+use App\Models\UserBadgeXp;
+use App\Models\UserXpEvent;
+use App\Models\XpEventDefinition;
 use App\Models\VettingCycle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -82,6 +89,18 @@ class VettingTest extends TestCase
         $first = $this->getJson('/api/vetting/settings')->json('enabled_at');
         $this->travel(1)->hours();
         $this->putJson('/api/vetting/settings', ['enabled' => true])->assertOk();
+        $this->assertSame($first, $this->getJson('/api/vetting/settings')->json('enabled_at'));
+    }
+
+    public function test_reenabling_after_a_disable_keeps_the_first_enabled_at(): void
+    {
+        $this->actingAs(User::factory()->create(), 'sanctum');
+        $this->putJson('/api/vetting/settings', ['enabled' => true])->assertOk();
+        $first = $this->getJson('/api/vetting/settings')->json('enabled_at');
+        $this->travel(2)->hours();
+        $this->putJson('/api/vetting/settings', ['enabled' => false])->assertOk();
+        $this->travel(2)->hours();
+        $this->putJson('/api/vetting/settings', ['enabled' => true])->assertOk()->assertJsonPath('enabled', true);
         $this->assertSame($first, $this->getJson('/api/vetting/settings')->json('enabled_at'));
     }
 
@@ -317,6 +336,66 @@ class VettingTest extends TestCase
     {
         $this->actingAs(User::factory()->create(), 'sanctum');
         $this->getJson('/api/vetting/settings')->assertOk()->assertJsonPath('enabled', false)->assertJsonPath('lease', null);
+    }
+
+    // ---- game night (step 6) ----
+
+    public function test_event_and_game_night_ids_are_write_once(): void
+    {
+        $token = $this->lease();
+        $id = $this->cycle($token);
+        $a = GameNight::create(['type' => 'hunt', 'status' => 'active']);
+        $b = GameNight::create(['type' => 'hunt', 'status' => 'ended']);
+
+        $this->putJson("/api/vetting/cycles/$id", ['event_id' => '111', 'game_night_id' => $a->id, 'lease_token' => $token])->assertOk()
+            ->assertJsonPath('event_id', '111')->assertJsonPath('game_night_id', $a->id);
+        $this->putJson("/api/vetting/cycles/$id", ['event_id' => '111', 'game_night_id' => $a->id, 'lease_token' => $token])->assertOk();
+        $this->putJson("/api/vetting/cycles/$id", ['event_id' => '112', 'lease_token' => $token])->assertStatus(409);
+        $this->putJson("/api/vetting/cycles/$id", ['game_night_id' => $b->id, 'lease_token' => $token])->assertStatus(409);
+        $this->putJson("/api/vetting/cycles/$id", ['game_night_id' => 99999, 'lease_token' => $token])->assertStatus(422);
+        $this->postJson('/api/system/channels', ['gamenight_channel_id' => '42'])->assertOk();
+        $this->getJson('/api/system/channels')->assertJsonPath('gamenight_channel_id', '42');
+    }
+
+    public function test_test_cleanup_removes_only_matching_context_xp_and_empty_game_nights(): void
+    {
+        $token = $this->lease();
+        $user = CrossroadsUser::factory()->create(['discord_id' => '555']);
+        $other = CrossroadsUser::factory()->create(['discord_id' => '556']);
+        $badge = Badge::create(['name' => 'B', 'description' => 'x', 'category' => 'community', 'is_xp_based' => true, 'rarity' => 'common', 'is_active' => true]);
+        $def = XpEventDefinition::create(['name' => 'E', 'badge_id' => $badge->id, 'xp_amount' => 5, 'cooldown_seconds' => 0]);
+        $trigger = fn($u, ?string $ctx) => $this->postJson("/api/crossroads-users/{$u->id}/xp-events/{$def->id}/trigger", $ctx === null ? [] : ['context' => $ctx])->assertOk();
+        $trigger($user, 'suggestion:1');
+        $trigger($user, 'suggestion:2');
+        $trigger($user, 'other_kind:1');
+        $trigger($user, null);              // a manual award: never touched
+        $trigger($other, 'suggestion:1');   // another user: never touched
+
+        $r = $this->postJson('/api/vetting/test-cleanup', ['lease_token' => $token, 'discord_id' => '555', 'contexts' => ['suggestion:1']])->assertOk();
+        $this->assertSame(1, $r->json('xp_events_deleted'));
+        $this->assertSame(['suggestion:2', 'other_kind:1', null], UserXpEvent::where('user_id', $user->id)->orderBy('id')->pluck('context')->all());
+        $this->assertSame(15, UserBadgeXp::where('user_id', $user->id)->first()->total_xp);
+
+        $r = $this->postJson('/api/vetting/test-cleanup', ['lease_token' => $token, 'discord_id' => '555', 'contexts' => ['suggestion:*']])->assertOk();
+        $this->assertSame(1, $r->json('xp_events_deleted'));
+        $this->assertSame(['other_kind:1', null], UserXpEvent::where('user_id', $user->id)->orderBy('id')->pluck('context')->all());
+        $this->assertSame(1, UserXpEvent::where('user_id', $other->id)->count());
+
+        $this->postJson('/api/vetting/test-cleanup', ['lease_token' => $token, 'discord_id' => '555', 'contexts' => ['other_kind:*', 'x:1']])->assertOk();
+        $this->assertSame([null], UserXpEvent::where('user_id', $user->id)->pluck('context')->all());
+        $this->assertSame(5, UserBadgeXp::where('user_id', $user->id)->first()->total_xp);
+
+        $empty = GameNight::create(['type' => 'hunt', 'status' => 'ended']);
+        $busy = GameNight::create(['type' => 'hunt', 'status' => 'ended']);
+        GameNightAttendee::create(['game_night_id' => $busy->id, 'user_id' => $user->id, 'joined_at' => now()]);
+        $r = $this->postJson('/api/vetting/test-cleanup', ['lease_token' => $token, 'game_night_ids' => [$empty->id, $busy->id]])->assertOk();
+        $this->assertSame(1, $r->json('game_nights_deleted'));
+        $this->assertSame(1, $r->json('game_nights_kept'));
+        $this->assertNull(GameNight::find($empty->id));
+        $this->assertNotNull(GameNight::find($busy->id));
+
+        $this->postJson('/api/vetting/test-cleanup', ['discord_id' => '555', 'contexts' => ['suggestion:*']])->assertStatus(409); // fenced
+        $this->postJson('/api/vetting/test-cleanup', ['lease_token' => $token, 'discord_id' => '555', 'contexts' => ['*']])->assertStatus(422);
     }
 
     // ---- hunt suggestions (step 5) ----

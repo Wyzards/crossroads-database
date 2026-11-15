@@ -15,6 +15,7 @@ class SystemController extends Controller
         'hunt_suggestions_channel_id',
         'vetting_forum_id',
         'announcements_channel_id',
+        'gamenight_channel_id',
     ];
 
     public function getChannels()

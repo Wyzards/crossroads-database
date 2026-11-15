@@ -14,5 +14,6 @@ class SystemChannel extends Model
         'hunt_suggestions_channel_id',
         'vetting_forum_id',
         'announcements_channel_id',
+        'gamenight_channel_id',
     ];
 }

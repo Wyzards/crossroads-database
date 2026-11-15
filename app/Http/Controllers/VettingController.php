@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\FilterEvaluator;
+use App\Models\CrossroadsUser;
+use App\Models\GameNight;
 use App\Models\Project;
 use App\Models\ProjectList;
 use App\Models\Tag;
+use App\Models\UserBadgeXp;
+use App\Models\UserXpEvent;
 use App\Models\VettingCycle;
 use App\Models\VettingCycleStep;
 use App\Models\VettingSetting;
 use App\Services\VettingLease;
+use App\Services\XpService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +35,7 @@ class VettingController extends Controller
     private const STEPS = ['choose', 'hunt_cleanup', 'close', 'poll_close', 'start', 'event', 'announce', 'gn_start', 'gn_end'];
 
     /** Write-once fields: null -> set, same value -> no-op, different value -> 409. */
-    private const WRITE_ONCE = ['chosen_project_id', 'chosen_by', 'announce_message_id', 'poll_thread_id', 'poll_message_id', 'candidates', 'poll_results'];
+    private const WRITE_ONCE = ['chosen_project_id', 'chosen_by', 'announce_message_id', 'poll_thread_id', 'poll_message_id', 'candidates', 'poll_results', 'event_id', 'game_night_id'];
 
     /** Write-once fields that hold structures: compared by value (key order ignored). */
     private const WRITE_ONCE_JSON = ['candidates', 'poll_results'];
@@ -84,7 +89,9 @@ class VettingController extends Controller
         $s = VettingSetting::row();
         if (array_key_exists('enabled', $data))
         {
-            if ($data['enabled'] && !$s->enabled)
+            // Only the first enable sets it. A later disable and re-enable is downtime, which the catch-up rules
+            // already handle; resetting it would silently skip a Friday group that fell inside the pause.
+            if ($data['enabled'] && $s->enabled_at === null)
                 $s->enabled_at = now();
             $s->enabled = $data['enabled'];
             unset($data['enabled']);
@@ -172,6 +179,8 @@ class VettingController extends Controller
             'chosen_project_id' => 'sometimes|nullable|integer|exists:projects,id',
             'chosen_by' => 'sometimes|nullable|in:oldest,only,poll,none',
             'announce_message_id' => 'sometimes|nullable|string|max:30',
+            'event_id' => 'sometimes|nullable|string|max:30',
+            'game_night_id' => 'sometimes|nullable|integer|exists:game_nights,id',
             'poll_thread_id' => 'sometimes|nullable|string|max:30',
             'poll_message_id' => 'sometimes|nullable|string|max:30',
             'candidates' => 'sometimes|nullable|array|max:10',
@@ -385,6 +394,77 @@ class VettingController extends Controller
             $project->save();
 
             return response()->json($project->load(...Project::RELATIONS));
+        });
+    }
+
+    // ---- rehearsal cleanup ----
+
+    /**
+     * Removes what a rehearsal created (ops.js vetting rehearse). Deliberately narrow: it needs the lease, deletes
+     * only context-keyed XP events (never manual or cooldown awards) of ONE user matching the given contexts
+     * (exact "kind:id", or "kind:*" for every context of that kind), and only game nights nobody attended.
+     * Removed XP is taken back off the badge total and the level recalculated; a total that reaches 0 drops the row.
+     */
+    public function testCleanup(Request $request, XpService $xpService)
+    {
+        $this->fence($request);
+        $data = $request->validate([
+            'discord_id' => 'required_with:contexts|string|max:30',
+            'contexts' => 'sometimes|array|max:100',
+            'contexts.*' => ['string', 'max:64', 'regex:/^[a-z_]+:(\*|[A-Za-z0-9_-]+)$/'],
+            'game_night_ids' => 'sometimes|array|max:20',
+            'game_night_ids.*' => 'integer',
+        ]);
+
+        return DB::transaction(function () use ($data, $xpService) {
+            $xpDeleted = 0;
+            $contexts = $data['contexts'] ?? [];
+            $user = $contexts ? CrossroadsUser::where('discord_id', $data['discord_id'])->first() : null;
+            if ($user)
+            {
+                $events = UserXpEvent::with('definition.badge')->where('user_id', $user->id)->whereNotNull('context')
+                    ->where(function ($q) use ($contexts) {
+                        foreach ($contexts as $c)
+                        {
+                            [$kind, $id] = explode(':', $c, 2);
+                            // "kind:*" is the range ["kind:", "kind;"): ';' follows ':' so no LIKE wildcards are involved.
+                            $id === '*'
+                                ? $q->orWhere(fn($w) => $w->where('context', '>=', "$kind:")->where('context', '<', "$kind;"))
+                                : $q->orWhere('context', $c);
+                        }
+                    })->get();
+
+                $back = [];
+                foreach ($events as $e)
+                    $back[$e->definition->badge_id] = ($back[$e->definition->badge_id] ?? 0) + $e->xp_amount;
+                UserXpEvent::whereIn('id', $events->pluck('id'))->delete();
+                $xpDeleted = $events->count();
+
+                foreach ($back as $badgeId => $amount)
+                {
+                    $row = UserBadgeXp::with('badge.progression')->where('user_id', $user->id)->where('badge_id', $badgeId)->lockForUpdate()->first();
+                    if (!$row)
+                        continue;
+                    $row->total_xp = max(0, $row->total_xp - $amount);
+                    if ($row->total_xp === 0)
+                    {
+                        $row->delete();
+                        continue;
+                    }
+                    $row->level = max(0, $xpService->calculateLevel($row->total_xp, $row->badge->progression));
+                    $row->save();
+                }
+            }
+
+            $nights = GameNight::whereIn('id', $data['game_night_ids'] ?? [])->withCount('attendees')->get();
+            $deletable = $nights->filter(fn($n) => $n->attendees_count === 0);
+            GameNight::whereIn('id', $deletable->pluck('id'))->delete();
+
+            return response()->json([
+                'xp_events_deleted' => $xpDeleted,
+                'game_nights_deleted' => $deletable->count(),
+                'game_nights_kept' => $nights->count() - $deletable->count(),
+            ]);
         });
     }
 
