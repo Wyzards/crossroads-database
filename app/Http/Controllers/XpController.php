@@ -7,6 +7,9 @@ use App\Models\CrossroadsUser;
 use App\Models\XpEventDefinition;
 use App\Models\UserXpEvent;
 use App\Models\UserBadgeXp;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class XpController extends Controller
 {
@@ -15,56 +18,93 @@ class XpController extends Controller
     ) {
     }
 
-    public function triggerEvent(CrossroadsUser $user, XpEventDefinition $definition)
+    public function triggerEvent(Request $request, CrossroadsUser $user, XpEventDefinition $definition)
     {
-        // 1. Cooldown check (unchanged)
-        $lastEvent = UserXpEvent::where('user_id', $user->id)
-            ->where('xp_event_definition_id', $definition->id)
-            ->latest('created_at')
-            ->first();
+        $data = $request->validate([
+            'context' => ['nullable', 'string', 'max:64', 'regex:/^[a-z_]+:[A-Za-z0-9_-]+$/'],
+        ]);
+        $context = $data['context'] ?? null;
 
-        if ($lastEvent && $definition->cooldown_seconds !== 0)
+        if ($context !== null)
         {
-            $diff = now()->timestamp - $lastEvent->created_at->timestamp;
+            // Context-keyed award: once per (user, event, context); the cooldown does not apply.
+            $exists = UserXpEvent::where('user_id', $user->id)
+                ->where('xp_event_definition_id', $definition->id)
+                ->where('context', $context)
+                ->exists();
 
-            if ($diff < $definition->cooldown_seconds)
+            if ($exists)
             {
                 return response()->noContent();
             }
         }
+        else
+        {
+            // No context: cooldown check (unchanged)
+            $lastEvent = UserXpEvent::where('user_id', $user->id)
+                ->where('xp_event_definition_id', $definition->id)
+                ->latest('created_at')
+                ->first();
 
-        // 2. Log event (unchanged)
-        $event = UserXpEvent::create([
-            'user_id' => $user->id,
-            'xp_event_definition_id' => $definition->id,
-            'xp_amount' => $definition->xp_amount,
-            'created_at' => now(),
-        ]);
+            if ($lastEvent && $definition->cooldown_seconds !== 0)
+            {
+                $diff = now()->timestamp - $lastEvent->created_at->timestamp;
 
-        // 3. Get badge tied to event
+                if ($diff < $definition->cooldown_seconds)
+                {
+                    return response()->noContent();
+                }
+            }
+        }
+
         $badge = $definition->badge;
 
-        // 4. Increment XP atomically
-        $userBadgeXp = UserBadgeXp::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'badge_id' => $badge->id,
-            ],
-            [
-                'total_xp' => 0,
-                'level' => 0,
-            ]
-        );
+        try
+        {
+            // Event insert and XP increment commit together, so a retried context-keyed
+            // award can never be refused after a half-applied first attempt.
+            $userBadgeXp = DB::transaction(function () use ($user, $definition, $badge, $context) {
+                // Ensure the row exists, then lock it to serialize concurrent awards.
+                UserBadgeXp::firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'badge_id' => $badge->id,
+                    ],
+                    [
+                        'total_xp' => 0,
+                        'level' => 0,
+                    ]
+                );
 
-        $userBadgeXp->total_xp += $definition->xp_amount;
+                $userBadgeXp = UserBadgeXp::where('user_id', $user->id)
+                    ->where('badge_id', $badge->id)
+                    ->lockForUpdate()
+                    ->first();
 
-        // 5. Recalculate level ONLY
-        $progression = $badge->progression;
+                // Insert first: a unique violation aborts before any XP is added.
+                UserXpEvent::create([
+                    'user_id' => $user->id,
+                    'xp_event_definition_id' => $definition->id,
+                    'xp_amount' => $definition->xp_amount,
+                    'context' => $context,
+                    'created_at' => now(),
+                ]);
 
-        $level = $this->xpService->calculateLevel($userBadgeXp->total_xp, $progression);
-        $userBadgeXp->level = max(0, $level);
-        $userBadgeXp->last_calculated_at = now();
-        $userBadgeXp->save();
+                $userBadgeXp->total_xp += $definition->xp_amount;
+
+                // Recalculate level ONLY
+                $level = $this->xpService->calculateLevel($userBadgeXp->total_xp, $badge->progression);
+                $userBadgeXp->level = max(0, $level);
+                $userBadgeXp->last_calculated_at = now();
+                $userBadgeXp->save();
+
+                return $userBadgeXp;
+            });
+        }
+        catch (UniqueConstraintViolationException)
+        {
+            return response()->noContent();
+        }
 
         return response()->json($userBadgeXp->load('badge'));
     }

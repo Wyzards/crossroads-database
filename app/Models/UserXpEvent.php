@@ -12,6 +12,7 @@ class UserXpEvent extends Model
         'user_id',
         'xp_event_definition_id',
         'xp_amount',
+        'context',
         'created_at',
     ];
 
