@@ -49,6 +49,15 @@ class Project extends Model
     ];
 
     /** Relations every project response carries (the bot renders listings from them). */
+    /** vetting_thread_id and community_vetted_at are managed by the vetting cycle, never mass-assigned. */
+    protected static function booted(): void
+    {
+        static::saving(function (Project $project) {
+            if ($project->isDirty('community_vetted'))
+                $project->community_vetted_at = now();
+        });
+    }
+
     public const RELATIONS = ['links', 'attachments', 'staff.user', 'sections.attachments', 'tags', 'banner'];
 
     protected $casts = [
@@ -61,6 +70,7 @@ class Project extends Model
         'join_method' => JoinMethod::class,
         'discord_kind' => DiscordKind::class,
         'has_dedicated_announcements' => 'boolean',
+        'community_vetted_at' => 'datetime',
     ];
 
     public function links()

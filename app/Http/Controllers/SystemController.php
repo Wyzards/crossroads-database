@@ -13,6 +13,8 @@ class SystemController extends Controller
         'intake_review_forum_id',
         'architects_channel_id',
         'hunt_suggestions_channel_id',
+        'vetting_forum_id',
+        'announcements_channel_id',
     ];
 
     public function getChannels()

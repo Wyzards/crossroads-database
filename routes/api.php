@@ -27,6 +27,7 @@ use App\Http\Controllers\TagRequestController;
 use App\Http\Controllers\AnnouncementConnectionController;
 use App\Http\Controllers\InviteCheckController;
 use App\Http\Controllers\ProjectContentController;
+use App\Http\Controllers\VettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -192,7 +193,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{tag}', [TagController::class, 'destroy']);
     });
 
+    Route::prefix('vetting')->group(function () {
+        Route::get('/settings', [VettingController::class, 'settings']);
+        Route::put('/settings', [VettingController::class, 'updateSettings']);
+        Route::post('/lease', [VettingController::class, 'acquireLease']);
+        Route::put('/lease', [VettingController::class, 'renewLease']);
+        Route::post('/lease/release', [VettingController::class, 'releaseLease']);
+        Route::get('/current', [VettingController::class, 'current']);
+        Route::get('/cycles', [VettingController::class, 'cycles']);
+        Route::post('/cycles', [VettingController::class, 'createCycle']);
+        Route::put('/cycles/{cycle}', [VettingController::class, 'updateCycle']);
+        Route::post('/cycles/{cycle}/steps/{step}', [VettingController::class, 'stepStatus']);
+        Route::post('/cycles/{cycle}/close', [VettingController::class, 'close']);
+        Route::post('/cycles/{cycle}/start', [VettingController::class, 'start']);
+        Route::post('/cycles/{cycle}/delete', [VettingController::class, 'destroyCycle']);
+        Route::put('/projects/{project}/thread', [VettingController::class, 'setThread']);
+        Route::post('/cancel', [VettingController::class, 'cancel']);
+    });
+
     Route::prefix('project-lists')->group(function () {
+        Route::post('/match', [VettingController::class, 'matchLists']);
         Route::get('/', [ProjectListsController::class, 'index']);
         Route::get('/{list}', [ProjectListsController::class, 'show']);
 

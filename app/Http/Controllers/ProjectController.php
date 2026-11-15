@@ -155,6 +155,16 @@ class ProjectController extends Controller
             'has_dedicated_announcements' => 'nullable|boolean',
         ]);
 
+        // currently_vetting is managed by the vetting cycle (a whole-object save from a stale read could
+        // otherwise put a closed project back into it).
+        if (array_key_exists('community_vetted', $validated))
+        {
+            $from = $project->community_vetted?->value;
+            $to = $validated['community_vetted'];
+            if ($from !== $to && ($from === 'currently_vetting' || $to === 'currently_vetting'))
+                return response()->json(['message' => 'currently_vetting is managed by the vetting cycle; use ops.js vetting'], 409);
+        }
+
         $project->update($validated);
         return response()->json($project->load(...Project::RELATIONS));
     }
